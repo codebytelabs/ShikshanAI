@@ -1,0 +1,158 @@
+# Implementation Plan
+
+- [x] 1. Database Schema and Types Setup
+  - [x] 1.1 Create database migration for gamification tables
+    - Create `student_gamification`, `badges`, `student_badges`, `student_topic_learning`, `xp_transactions` tables
+    - Add indexes for performance
+    - Insert default badge definitions
+    - _Requirements: 3.1, 3.7, 4.1, 5.1-5.4_
+  - [x] 1.2 Create TypeScript types for gamification
+    - Define interfaces for StudentGamification, Badge, TopicLearningProgress
+    - Add to `src/services/db/types.ts` or new file
+    - _Requirements: 3.1, 5.1_
+  - [x] 1.3 Write property test for level calculation
+    - **Property 7: Level Calculation Consistency**
+    - **Validates: Requirements 3.7**
+
+- [x] 2. Gamification Service Implementation
+  - [x] 2.1 Create gamificationService.ts with core functions
+    - Implement `awardXP`, `getGamificationData`, `calculateLevel`
+    - Implement `updateStreak`, `checkStreakStatus`
+    - _Requirements: 3.1-3.7, 4.1-4.5_
+  - [x] 2.2 Write property test for XP award consistency
+    - **Property 1: XP Award Consistency**
+    - **Validates: Requirements 3.1, 3.2, 3.3, 3.4, 3.5**
+  - [x] 2.3 Write property test for streak logic
+    - **Property 2: Streak Increment Logic**
+    - **Property 3: Streak Reset on Miss**
+    - **Validates: Requirements 4.1, 4.2**
+  - [x] 2.4 Implement badge checking and awarding
+    - Implement `checkBadges`, `awardBadge`, `getStudentBadges`
+    - _Requirements: 5.1-5.6_
+  - [x] 2.5 Write property test for badge criteria
+    - **Property 4: Badge Award Criteria**
+    - **Validates: Requirements 5.1, 5.2, 5.3, 5.4**
+
+- [x] 3. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 4. Mastery Service Implementation
+  - [x] 4.1 Create masteryService.ts with core functions
+    - Implement `completeConceptLearning`, `updateMasteryFromPractice`
+    - Implement `getTopicMastery`, `isTopicMastered`
+    - _Requirements: 6.1-6.5_
+  - [x] 4.2 Write property test for mastery bounds
+    - **Property 5: Mastery Calculation Bounds**
+    - **Validates: Requirements 6.1, 6.2**
+  - [x] 4.3 Write property test for mastery threshold
+    - **Property 6: Mastery Threshold Detection**
+    - **Validates: Requirements 6.4**
+
+- [x] 5. Lesson Service Implementation
+  - [x] 5.1 Create lessonService.ts with AI content generation
+    - Implement `generateLesson` using AI tutor service
+    - Implement `getLesson` with caching
+    - Implement `completeSection`
+    - _Requirements: 1.1-1.8, 2.1-2.5_
+  - [x] 5.2 Write property test for content generation
+    - **Property 10: Content Generation for Empty Topics**
+    - **Validates: Requirements 2.1, 2.4, 10.1**
+  - [x] 5.3 Write property test for section completion
+    - **Property 8: Section Completion Progress**
+    - **Validates: Requirements 1.4, 1.5**
+
+- [x] 6. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 7. UI Components - Gamification
+  - [x] 7.1 Create XPNotification component
+    - Animated popup showing XP earned
+    - Auto-dismiss after 2 seconds
+    - _Requirements: 3.6_
+  - [x] 7.2 Create StreakDisplay component
+    - Flame icon with streak count
+    - Warning state when at risk
+    - _Requirements: 4.3_
+  - [x] 7.3 Create BadgeCollection component
+    - Grid of earned badges
+    - Locked badges as silhouettes
+    - _Requirements: 5.5, 5.6_
+  - [x] 7.4 Create ProgressRing component
+    - Circular progress indicator for mastery
+    - Color changes based on level
+    - _Requirements: 6.3_
+
+- [x] 8. Topic Learning Page
+  - [x] 8.1 Create TopicLearn.tsx page
+    - Display AI-generated lesson sections
+    - Show progress through sections
+    - Checkpoint buttons after each section
+    - _Requirements: 1.1-1.7, 9.1-9.4_
+  - [x] 8.2 Create LessonSection component
+    - Display section content with formatting
+    - Show examples with highlighting
+    - Checkpoint interaction
+    - _Requirements: 1.2, 1.3, 1.4_
+  - [x] 8.3 Integrate XP awards on section completion
+    - Award XP when checkpoint passed
+    - Show XP notification
+    - _Requirements: 1.5, 3.1_
+  - [x] 8.4 Write property test for navigation flow
+    - **Property 9: Navigation Flow Enforcement**
+    - **Validates: Requirements 9.3**
+
+- [x] 9. Update Existing Pages
+  - [x] 9.1 Update ChapterDetail.tsx navigation
+    - Change topic click to navigate to TopicLearn instead of Practice
+    - Show mastery on topic cards
+    - _Requirements: 9.1, 6.3_
+  - [x] 9.2 Update Home.tsx with gamification
+    - Add streak display
+    - Add daily goal progress
+    - Add XP and level display
+    - _Requirements: 4.3, 8.2, 3.7_
+  - [x] 9.3 Update Profile.tsx with badges and stats
+    - Show badge collection
+    - Show total XP and level
+    - Show learning statistics
+    - _Requirements: 5.6, 3.7_
+
+- [x] 10. Enhanced Practice Integration
+  - [x] 10.1 Update Practice.tsx with gamification
+    - Award XP for correct answers
+    - Update mastery after practice
+    - Show "Review Concept" button on struggles
+    - _Requirements: 3.2, 3.3, 6.2, 7.2_
+  - [x] 10.2 Write property test for question prioritization
+    - **Property 12: Question Prioritization by Mastery**
+    - **Validates: Requirements 7.1**
+  - [x] 10.3 Write property test for consecutive wrong detection
+    - **Property 13: Consecutive Wrong Answer Detection**
+    - **Validates: Requirements 7.4**
+  - [x] 10.4 Add practice summary with XP and areas to review
+    - Show XP earned in session
+    - Show accuracy percentage
+    - Suggest topics to review
+    - _Requirements: 7.3_
+
+- [x] 11. Daily Goals Feature
+  - [x] 11.1 Add daily goal selection to onboarding
+    - Options: 15, 30, or 60 minutes
+    - Store in student_gamification
+    - _Requirements: 8.1_
+  - [x] 11.2 Implement daily goal tracking
+    - Track time spent learning
+    - Award bonus XP on completion
+    - _Requirements: 8.2, 8.3, 8.4_
+  - [x] 11.3 Write property test for daily goal progress
+    - **Property 11: Daily Goal Progress Tracking**
+    - **Validates: Requirements 8.2, 8.3**
+
+- [x] 12. Empty Topic Handling
+  - [x] 12.1 Update topic display for empty content
+    - Show AI-generated content even without questions
+    - Display "Practice questions coming soon" message
+    - _Requirements: 10.1, 10.2, 10.3_
+
+- [x] 13. Final Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.

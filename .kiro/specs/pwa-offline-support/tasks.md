@@ -1,0 +1,195 @@
+# Implementation Plan
+
+- [x] 1. Set up PWA infrastructure and dependencies
+  - [x] 1.1 Install PWA dependencies (vite-plugin-pwa, workbox)
+    - Add vite-plugin-pwa to package.json
+    - Configure PWA plugin in vite.config.ts
+    - _Requirements: 1.1, 1.2, 1.3, 1.4_
+  - [x] 1.2 Create web app manifest
+    - Create public/manifest.json with app name, icons, theme colors
+    - Configure display: standalone mode
+    - Add manifest link to index.html
+    - _Requirements: 1.2, 1.4_
+  - [x] 1.3 Create PWA icons and splash screens
+    - Generate icon set (192x192, 512x512) with ShikshanAI branding
+    - Add apple-touch-icon for iOS
+    - _Requirements: 1.2_
+
+- [x] 2. Implement Service Worker and caching
+  - [x] 2.1 Configure Workbox service worker
+    - Set up precaching for app shell assets
+    - Configure cache-first strategy for static assets
+    - Set up runtime caching for API responses
+    - _Requirements: 2.1, 2.3_
+  - [ ]* 2.2 Write property test for cache eviction
+    - **Property 2: Cache eviction preserves essentials under limit**
+    - **Validates: Requirements 2.4**
+  - [x] 2.3 Implement service worker update flow
+    - Detect new service worker versions
+    - Show update prompt to user
+    - Handle skipWaiting and reload
+    - _Requirements: 2.2_
+
+- [x] 3. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 4. Implement IndexedDB storage layer
+  - [x] 4.1 Create IndexedDB wrapper service
+    - Set up database schema with object stores (lessonPacks, pendingResponses, offlineProgress, metadata)
+    - Implement CRUD operations for each store
+    - Handle database versioning and migrations
+    - _Requirements: 3.2, 5.1_
+  - [ ]* 4.2 Write property test for lesson pack round-trip
+    - **Property 3: Lesson pack download round-trip**
+    - **Validates: Requirements 3.2**
+  - [ ]* 4.3 Write property test for offline response storage
+    - **Property 9: Offline response storage round-trip**
+    - **Validates: Requirements 5.1**
+
+- [x] 5. Implement Offline Service
+  - [x] 5.1 Create offline service core
+    - Implement downloadLessonPack() to fetch and store chapter data
+    - Implement getLessonPack() to retrieve from IndexedDB
+    - Implement isChapterDownloaded() check
+    - _Requirements: 3.2, 4.1, 4.2_
+  - [ ]* 5.2 Write property test for downloaded status accuracy
+    - **Property 5: Downloaded status indicator accuracy**
+    - **Validates: Requirements 3.4**
+  - [ ]* 5.3 Write property test for offline content accessibility
+    - **Property 6: Offline content accessibility**
+    - **Validates: Requirements 4.1, 4.2**
+  - [x] 5.4 Implement download progress tracking
+    - Track bytes downloaded vs total
+    - Emit progress events during download
+    - _Requirements: 3.3_
+  - [ ]* 5.5 Write property test for download progress accuracy
+    - **Property 4: Download progress accuracy**
+    - **Validates: Requirements 3.3**
+  - [x] 5.6 Implement lesson pack deletion
+    - Implement deleteLessonPack() to remove single chapter
+    - Implement clearAllOfflineData() to remove all content
+    - _Requirements: 7.3, 7.4_
+  - [ ]* 5.7 Write property test for deletion completeness
+    - **Property 16: Lesson pack deletion completeness**
+    - **Validates: Requirements 7.3**
+
+- [x] 6. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 7. Implement Network Monitor
+  - [x] 7.1 Create useNetworkStatus hook
+    - Listen to online/offline events
+    - Track wasOffline state for sync trigger
+    - Detect effective connection type if available
+    - _Requirements: 6.1, 6.2, 6.3_
+  - [ ]* 7.2 Write property test for offline indicator
+    - **Property 8: Offline indicator matches network state**
+    - **Validates: Requirements 4.4, 6.2, 6.3**
+  - [x] 7.3 Create OfflineBanner component
+    - Show banner when offline
+    - Display pending sync count
+    - Auto-hide when back online
+    - _Requirements: 6.2, 6.3_
+
+- [x] 8. Implement Sync Service
+  - [x] 8.1 Create sync service core
+    - Implement queueResponse() to store pending responses
+    - Implement getPendingCount() for UI display
+    - Implement syncPendingResponses() for batch sync
+    - _Requirements: 5.1, 5.2, 5.4_
+  - [ ]* 8.2 Write property test for pending count accuracy
+    - **Property 12: Pending sync count accuracy**
+    - **Validates: Requirements 5.4**
+  - [ ]* 8.3 Write property test for sync removes from queue
+    - **Property 13: Sync removes from pending queue**
+    - **Validates: Requirements 5.5**
+  - [x] 8.4 Implement conflict resolution
+    - Compare timestamps for same question responses
+    - Preserve most recent response
+    - _Requirements: 5.3_
+  - [ ]* 8.5 Write property test for conflict resolution
+    - **Property 11: Conflict resolution by timestamp**
+    - **Validates: Requirements 5.3**
+  - [x] 8.6 Integrate sync with network monitor
+    - Trigger sync when network becomes available
+    - Handle sync errors with retry logic
+    - _Requirements: 5.2, 6.3_
+  - [ ]* 8.7 Write property test for sync on reconnection
+    - **Property 10: Sync on reconnection**
+    - **Validates: Requirements 5.2**
+
+- [x] 9. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 10. Implement Storage Service
+  - [x] 10.1 Create storage service
+    - Implement getUsedStorage() to calculate total usage
+    - Implement getLessonPackSize() for individual packs
+    - Implement isStorageAvailable() check before downloads
+    - _Requirements: 7.1, 7.2, 3.5_
+  - [ ]* 10.2 Write property test for storage calculation
+    - **Property 15: Storage calculation accuracy**
+    - **Validates: Requirements 7.1, 7.2**
+  - [x] 10.3 Implement LRU cache eviction
+    - Track last accessed time for lesson packs
+    - Evict oldest packs when storage limit reached
+    - Preserve essential app shell assets
+    - _Requirements: 2.4_
+
+- [x] 11. Implement UI Components
+  - [x] 11.1 Create DownloadButton component
+    - Show download/downloaded state
+    - Display progress during download
+    - Handle storage full error
+    - _Requirements: 3.1, 3.3, 3.4, 3.5_
+  - [x] 11.2 Integrate DownloadButton into ChapterDetail page
+    - Add download button to chapter header
+    - Show offline indicator for downloaded chapters
+    - _Requirements: 3.1, 3.4_
+  - [x] 11.3 Create StorageManager component for Profile
+    - Display total storage used
+    - List downloaded chapters with sizes
+    - Add delete and clear all buttons
+    - _Requirements: 7.1, 7.2, 7.3, 7.4_
+  - [x] 11.4 Integrate offline banner into AppLayout
+    - Add OfflineBanner to layout header
+    - Show sync indicator with pending count
+    - _Requirements: 4.4, 5.4, 6.2_
+  - [x] 11.5 Update Tutor page for offline state
+    - Disable input when offline
+    - Show message that Tutor requires internet
+    - _Requirements: 4.5_
+  - [ ]* 11.6 Write property test for network-required features
+    - **Property 14: Network-required features disabled when offline**
+    - **Validates: Requirements 4.5, 6.4**
+
+- [x] 12. Implement offline content access
+  - [x] 12.1 Update ChapterDetail to use offline data
+    - Check if chapter is downloaded
+    - Load from IndexedDB when offline
+    - Show download prompt for non-downloaded chapters
+    - _Requirements: 4.1, 4.3_
+  - [ ]* 12.2 Write property test for non-downloaded content
+    - **Property 7: Non-downloaded content shows download message**
+    - **Validates: Requirements 4.3**
+  - [x] 12.3 Update Practice page for offline mode
+    - Load questions from IndexedDB when offline
+    - Queue responses for sync when offline
+    - _Requirements: 4.2, 5.1_
+
+- [-] 13. Implement install prompt
+  - [x] 13.1 Create install prompt logic
+    - Track visit count in IndexedDB metadata
+    - Show prompt after second visit within 7 days
+    - Handle beforeinstallprompt event
+    - _Requirements: 1.1_
+  - [ ]* 13.2 Write property test for install prompt
+    - **Property 1: Install prompt visit tracking**
+    - **Validates: Requirements 1.1**
+  - [x] 13.3 Create InstallPrompt component
+    - Design mobile-friendly install banner
+    - Handle install acceptance/dismissal
+    - _Requirements: 1.1_
+
+- [x] 14. Final Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.

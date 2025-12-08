@@ -1,0 +1,167 @@
+# Implementation Plan
+
+- [x] 1. Database Schema Updates
+  - [x] 1.1 Create migration for student_topic_progress table
+    - Add table with student_id, topic_id, completed_at, score columns
+    - Add unique constraint on (student_id, topic_id)
+    - Add index on student_id
+    - _Requirements: 1.1, 1.2_
+  - [x] 1.2 Create migration for question_attempts table
+    - Add table with student_id, question_id, selected_answer, is_correct, attempted_at
+    - Add indexes for efficient queries
+    - _Requirements: 3.2_
+  - [x] 1.3 Update student_profiles table
+    - Add user_id column for auth linking
+    - Add session_count column for prompt tracking
+    - _Requirements: 4.1, 4.2, 4.4_
+
+- [x] 2. Progress Service Implementation
+  - [x] 2.1 Create progressService.ts with core functions
+    - Implement markTopicComplete function
+    - Implement getSubjectProgress with real calculation
+    - Implement getAllProgress for all subjects
+    - Implement resetProgress to delete all records
+    - _Requirements: 1.1, 1.2, 1.3, 1.5_
+  - [x] 2.2 Write property test for progress calculation
+    - **Property 1: Progress Calculation Accuracy**
+    - **Validates: Requirements 1.2**
+  - [x] 2.3 Write property test for progress reset
+    - **Property 2: Progress Reset Completeness**
+    - **Validates: Requirements 1.3**
+  - [x] 2.4 Write property test for progress determinism
+    - **Property 3: Progress Determinism**
+    - **Validates: Requirements 1.5**
+  - [x] 2.5 Update Home.tsx to use real progress
+    - Replace Math.random() with progressService calls
+    - _Requirements: 1.4, 5.2_
+  - [x] 2.6 Update Profile.tsx to use real progress and fix reset
+    - Replace random progress with real calculations
+    - Implement actual reset functionality
+    - _Requirements: 1.3, 1.4, 5.2_
+
+- [x] 3. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 4. AI Tutor Service Implementation
+  - [x] 4.1 Create aiTutorService.ts with OpenRouter integration
+    - Implement sendMessage function with API call
+    - Implement buildSystemPrompt with context injection
+    - Add error handling for API failures
+    - _Requirements: 2.1, 2.2, 2.5, 2.6_
+  - [x] 4.2 Write property test for context inclusion
+    - **Property 5: AI Context Inclusion**
+    - **Validates: Requirements 2.2**
+  - [x] 4.3 Write property test for message serialization
+    - **Property 4: Chat Message Serialization Round-Trip**
+    - **Validates: Requirements 2.7, 2.8**
+  - [x] 4.4 Create useAITutor hook for React integration
+    - Manage chat state and loading
+    - Handle context from StudentContext
+    - _Requirements: 2.1, 2.2_
+  - [x] 4.5 Update Tutor.tsx to use real AI
+    - Replace mock responses with aiTutorService
+    - Add subject/chapter context awareness
+    - Implement hint-first pedagogy in system prompt
+    - Add error handling and retry UI
+    - _Requirements: 2.1, 2.2, 2.3, 2.4, 2.5, 2.6_
+
+- [x] 5. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 6. Practice Service Implementation
+  - [x] 6.1 Create practiceService.ts with question management
+    - Implement getQuestionsForTopic with prioritization
+    - Implement recordAttempt function
+    - Implement getStats function
+    - _Requirements: 3.1, 3.2, 3.3, 3.5_
+  - [x] 6.2 Write property test for question filtering
+    - **Property 6: Question Filtering by Topic**
+    - **Validates: Requirements 3.1**
+  - [x] 6.3 Write property test for attempt recording
+    - **Property 7: Attempt Recording Persistence**
+    - **Validates: Requirements 3.2**
+  - [x] 6.4 Write property test for question prioritization
+    - **Property 8: Question Prioritization Order**
+    - **Validates: Requirements 3.3**
+  - [x] 6.5 Write property test for stats accuracy
+    - **Property 9: Practice Stats Accuracy**
+    - **Validates: Requirements 3.5**
+  - [x] 6.6 Update Practice.tsx to use practiceService
+    - Use smart question ordering
+    - Record attempts on answer
+    - Show accurate progress stats
+    - Handle exhausted questions gracefully
+    - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
+
+- [x] 7. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 8. Authentication Service Implementation
+  - [x] 8.1 Create authService.ts with Supabase Auth
+    - Implement signUp, signIn, signOut functions
+    - Implement getCurrentUser function
+    - Implement linkDeviceToUser function
+    - _Requirements: 4.2, 4.6_
+  - [x] 8.2 Write property test for auth data linking
+    - **Property 11: Auth Data Linking**
+    - **Validates: Requirements 4.2**
+  - [x] 8.3 Create useAuth hook for React integration
+    - Manage auth state
+    - Handle session persistence
+    - _Requirements: 4.1, 4.2_
+  - [x] 8.4 Implement session counting and sync prompt
+    - Increment session_count on app load
+    - Show prompt after 3+ sessions for anonymous users
+    - _Requirements: 4.4_
+  - [x] 8.5 Write property test for session prompt trigger
+    - **Property 12: Session Count Prompt Trigger**
+    - **Validates: Requirements 4.4**
+  - [x] 8.6 Implement data merge on authentication
+    - Merge anonymous device data with authenticated account
+    - Use timestamp-based conflict resolution
+    - _Requirements: 4.7_
+  - [x] 8.7 Write property test for data merge recency
+    - **Property 14: Data Merge Recency**
+    - **Validates: Requirements 4.7**
+
+- [x] 9. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 10. UI Updates for Authentication
+  - [x] 10.1 Create AuthModal component
+    - Login/Signup form with email/password
+    - Error display and loading states
+    - _Requirements: 4.2, 4.5_
+  - [x] 10.2 Create SyncPrompt component
+    - Prompt for anonymous users after 3+ sessions
+    - Dismissible with "remind later" option
+    - _Requirements: 4.4_
+  - [x] 10.3 Update Profile.tsx with auth UI
+    - Show login/signup for anonymous users
+    - Show account info and logout for authenticated users
+    - Show sync status indicator
+    - _Requirements: 4.5, 4.6_
+  - [x] 10.4 Write property test for profile auth state
+    - **Property 13: Profile Auth State Display**
+    - **Validates: Requirements 4.5**
+
+- [x] 11. Integration and Polish
+  - [x] 11.1 Update StudentContext with auth integration
+    - Add auth state to context
+    - Handle data sync on auth state change
+    - _Requirements: 4.2, 4.3_
+  - [x] 11.2 Add progress tracking to Learn flow
+    - Mark topics complete when user finishes content
+    - Update progress in real-time
+    - _Requirements: 1.1, 5.2_
+  - [x] 11.3 Remove all mock/random data usage
+    - Audit codebase for Math.random() in data
+    - Replace with real database queries
+    - _Requirements: 5.1, 5.2_
+  - [x] 11.4 Add empty state handling
+    - Show guidance when no data exists
+    - Provide clear next steps for users
+    - _Requirements: 5.3, 5.4_
+
+- [x] 12. Final Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
