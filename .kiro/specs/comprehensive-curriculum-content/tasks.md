@@ -1,0 +1,130 @@
+# Implementation Plan
+
+- [x] 1. Database Schema and Migration
+  - [x] 1.1 Create lesson_sections table migration
+    - Add lesson_sections table with columns: id, topic_id, section_type, title, content, display_order, ncert_ref, created_at
+    - Add foreign key constraint to topics table
+    - Add index on topic_id for query performance
+    - _Requirements: 1.1, 1.2_
+  - [x] 1.2 Write property test for section ordering
+    - **Property 1: Section ordering consistency**
+    - **Validates: Requirements 1.1**
+  - [x] 1.3 Enhance practice_questions table
+    - Add solution column for step-by-step solutions
+    - Add ncert_ref column for NCERT exercise references
+    - Ensure difficulty column exists with enum constraint
+    - _Requirements: 3.2, 3.3, 2.4_
+
+- [x] 2. Lesson Service Implementation
+  - [x] 2.1 Create lessonService.ts with fetch functions
+    - Implement getLessonSections(topicId) to fetch sections ordered by display_order
+    - Implement getLessonSectionsByType(topicId, sectionType) for filtered queries
+    - Add caching for frequently accessed content
+    - _Requirements: 1.1_
+  - [x] 2.2 Write property test for content completeness
+    - **Property 2: Content completeness**
+    - **Validates: Requirements 1.2**
+  - [x] 2.3 Write unit tests for lessonService
+    - Test getLessonSections returns sections in correct order
+    - Test error handling for missing topics
+    - _Requirements: 1.1_
+
+- [x] 3. LessonSection Component
+  - [x] 3.1 Create LessonSection React component
+    - Render different section types with appropriate styling
+    - Introduction: Blue info box with learning objectives
+    - Concept: Standard text with headings and markdown support
+    - Example: Numbered steps with solution highlighting
+    - Formula: Highlighted box with LaTeX rendering
+    - Remember: Yellow callout box for key points
+    - Summary: Bullet points with key takeaways
+    - _Requirements: 1.2, 6.1, 6.2_
+  - [x] 3.2 Write property test for remember section rendering
+    - **Property 9: Remember section rendering**
+    - **Validates: Requirements 6.2**
+  - [x] 3.3 Add NCERT reference display
+    - Show ncert_ref when present on sections
+    - Style as subtle reference link/badge
+    - _Requirements: 1.4, 2.4_
+  - [x] 3.4 Write property test for NCERT reference display
+    - **Property 3: NCERT reference display**
+    - **Validates: Requirements 1.4, 2.4**
+
+- [x] 4. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.
+
+- [x] 5. Practice Questions Enhancement
+  - [x] 5.1 Update practiceService for enhanced questions
+    - Add solution field to question responses
+    - Include ncert_ref in question data
+    - Ensure difficulty is always present
+    - _Requirements: 3.2, 3.3_
+  - [x] 5.2 Write property test for solution presence
+    - **Property 5: Solution presence**
+    - **Validates: Requirements 3.2**
+  - [x] 5.3 Write property test for difficulty level presence
+    - **Property 6: Difficulty level presence**
+    - **Validates: Requirements 3.3**
+  - [x] 5.4 Update Practice page to show solutions
+    - Display step-by-step solution after answer submission
+    - Show NCERT reference when available
+    - _Requirements: 3.2, 2.4_
+
+- [x] 6. Content Seeding - Class 10 Mathematics
+  - [x] 6.1 Create seed data for Real Numbers chapter
+    - Add lesson sections: introduction, concepts, examples, formulas, remember, summary
+    - Add 10+ practice questions with solutions
+    - Include NCERT references
+    - _Requirements: 4.1, 4.2, 4.3_
+  - [x] 6.2 Create seed data for Polynomials chapter
+    - Add lesson sections for all topics
+    - Add 10+ practice questions per topic
+    - _Requirements: 4.1, 4.2, 4.3_
+  - [x] 6.3 Create seed data for remaining Math chapters
+    - Linear Equations, Quadratic Equations, Arithmetic Progressions
+    - Triangles, Coordinate Geometry, Trigonometry
+    - Circles, Constructions, Areas Related to Circles
+    - Surface Areas and Volumes, Statistics, Probability
+    - _Requirements: 4.1, 4.2, 4.3_
+  - [x] 6.4 Write property test for minimum topics per chapter
+    - **Property 7: Minimum topics per chapter**
+    - **Validates: Requirements 4.2, 5.2**
+  - [x] 6.5 Write property test for minimum questions per topic
+    - **Property 8: Minimum questions per topic**
+    - **Validates: Requirements 4.3, 5.3**
+
+- [x] 7. Content Seeding - Class 10 Science
+  - [x] 7.1 Create seed data for Physics chapters
+    - Light, Human Eye, Electricity, Magnetic Effects, Sources of Energy
+    - Add lesson sections and practice questions
+    - _Requirements: 5.1, 5.2, 5.3_
+  - [x] 7.2 Create seed data for Chemistry chapters
+    - Chemical Reactions, Acids Bases Salts, Metals Non-metals
+    - Carbon Compounds, Periodic Classification
+    - _Requirements: 5.1, 5.2, 5.3_
+  - [x] 7.3 Create seed data for Biology chapters
+    - Life Processes, Control and Coordination, Reproduction
+    - Heredity and Evolution, Our Environment, Natural Resources
+    - _Requirements: 5.1, 5.2, 5.3_
+
+- [x] 8. Question Type Diversity
+  - [x] 8.1 Ensure question type variety in seed data
+    - Add MCQ, numerical, and short answer questions for each topic
+    - Balance difficulty levels (easy, medium, hard)
+    - _Requirements: 3.1, 3.3_
+  - [x] 8.2 Write property test for question type diversity
+    - **Property 4: Question type diversity**
+    - **Validates: Requirements 3.1**
+
+- [x] 9. TopicLearn Page Integration
+  - [x] 9.1 Update TopicLearn page to display lesson sections
+    - Fetch and render lesson sections in order
+    - Show progress through sections
+    - _Requirements: 1.1, 1.2_
+  - [x] 9.2 Add navigation between sections
+    - Previous/Next section buttons
+    - Section list sidebar or dropdown
+    - _Requirements: 1.1_
+
+- [x] 10. Final Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise.

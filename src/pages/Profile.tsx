@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useStudentContext } from '@/contexts/StudentContext';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { StorageManager } from '@/components/pwa/StorageManager';
 import { getSubjectProgress, resetProgress } from '@/services/progressService';
 import { getGamificationData, getAllBadges, GamificationData, recalculateStreakFromHistory } from '@/services/gamificationService';
@@ -14,9 +13,10 @@ import { SyncPrompt } from '@/components/auth/SyncPrompt';
 import type { Badge } from '@/services/gamification/types';
 import { cn } from '@/lib/utils';
 import { 
-  User, Flame, BookOpen, Settings, Bell, RefreshCw, Loader2, 
+  Flame, BookOpen, Settings, Bell, RefreshCw, Pencil,
   LogOut, Cloud, CloudOff, Star, Trophy, ChevronRight, Sparkles
 } from 'lucide-react';
+import { StudentAvatar, getDisplayName, getDefaultAvatar, EditProfileModal } from '@/components/profile';
 
 interface SubjectProgress {
   id: string;
@@ -38,15 +38,19 @@ const getSubjectStyle = (name: string) => {
 
 export default function Profile() {
   const navigate = useNavigate();
-  const { profile, subjects: studentSubjects, loading: profileLoading } = useStudentContext();
+  const { profile, subjects: studentSubjects, loading: profileLoading, refetch } = useStudentContext();
   const { user, signOut, isLoading: authLoading } = useAuth();
   const [gradeName, setGradeName] = useState('');
   const [subjectsProgress, setSubjectsProgress] = useState<SubjectProgress[]>([]);
   const [loading, setLoading] = useState(true);
   const [showAuthModal, setShowAuthModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
   const [syncPromptDismissed, setSyncPromptDismissed] = useState(false);
   const [gamification, setGamification] = useState<GamificationData | null>(null);
   const [allBadges, setAllBadges] = useState<Badge[]>([]);
+  const [gradeNumber, setGradeNumber] = useState<number>(10);
+  const [displayName, setDisplayName] = useState('');
+  const [currentAvatar, setCurrentAvatar] = useState('');
 
   const shouldShowSyncPrompt = useSyncPrompt(profile?.session_count ?? 0, profile?.user_id);
 
@@ -59,11 +63,18 @@ export default function Profile() {
 
       const { data: gradeData } = await supabase
         .from('grades')
-        .select('name')
+        .select('name, number')
         .eq('id', profile.grade_id)
         .single();
       
-      if (gradeData) setGradeName(gradeData.name);
+      if (gradeData) {
+        setGradeName(gradeData.name);
+        setGradeNumber(gradeData.number || 10);
+      }
+      
+      // Set initial display name and avatar
+      setDisplayName(getDisplayName(profile.name, profile.device_id, gradeData?.number || 10));
+      setCurrentAvatar(profile.avatar || getDefaultAvatar(profile.device_id));
 
       const subjectIds = studentSubjects.map(s => s.subject_id);
       const { data: subjectsData } = await supabase
@@ -124,16 +135,36 @@ export default function Profile() {
       <div className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-800 px-4 pt-8 pb-16 text-white">
         <div className="flex items-center gap-4">
           <div className="relative">
-            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm border-2 border-white/30">
-              <User className="h-10 w-10 text-white" />
-            </div>
+            <button 
+              onClick={() => setShowEditModal(true)}
+              className="relative group"
+            >
+              <StudentAvatar 
+                avatarId={currentAvatar || getDefaultAvatar(profile?.device_id)} 
+                size="lg" 
+              />
+              {/* Edit overlay */}
+              <div className="absolute inset-0 rounded-2xl bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                <Pencil className="h-6 w-6 text-white" />
+              </div>
+            </button>
             {/* Level Badge */}
             <div className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 flex items-center justify-center text-xs font-bold text-white border-2 border-white shadow-lg">
               {gamification?.level || 1}
             </div>
           </div>
           <div className="flex-1">
-            <h1 className="text-2xl font-bold font-display">{profile?.name || 'Student'}</h1>
+            <div className="flex items-center gap-2">
+              <h1 className="text-2xl font-bold font-display">
+                {displayName || getDisplayName(profile?.name, profile?.device_id, gradeNumber)}
+              </h1>
+              <button 
+                onClick={() => setShowEditModal(true)}
+                className="p-1 rounded-lg hover:bg-white/20 transition-colors"
+              >
+                <Pencil className="h-4 w-4 text-white/70" />
+              </button>
+            </div>
             <p className="text-white/80 text-sm">{gradeName} • CBSE</p>
             <div className="flex items-center gap-1 mt-1">
               {isAuthenticated ? (
@@ -324,6 +355,23 @@ export default function Profile() {
 
       {/* Auth Modal */}
       <AuthModal open={showAuthModal} onOpenChange={setShowAuthModal} />
+      
+      {/* Edit Profile Modal */}
+      <EditProfileModal
+        open={showEditModal}
+        onOpenChange={setShowEditModal}
+        currentName={profile?.name}
+        currentAvatar={currentAvatar}
+        deviceId={profile?.device_id}
+        gradeNumber={gradeNumber}
+        profileId={profile?.id}
+        onSave={(name, avatar) => {
+          setDisplayName(name || getDisplayName(null, profile?.device_id, gradeNumber));
+          setCurrentAvatar(avatar);
+          // Refetch profile to update context with new avatar
+          refetch();
+        }}
+      />
     </main>
   );
 }

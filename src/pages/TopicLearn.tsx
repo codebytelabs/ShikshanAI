@@ -4,22 +4,26 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
-import { ArrowLeft, BookOpen, Play, CheckCircle2, Lightbulb, Loader2, ChevronRight, GraduationCap } from 'lucide-react';
+import { ArrowLeft, BookOpen, Play, CheckCircle2, Loader2, ChevronRight, GraduationCap } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useStudentContext } from '@/contexts/StudentContext';
 import { XPNotification, useXPNotification, LevelUpNotification, useLevelUpNotification, BadgeNotification, useBadgeNotification } from '@/components/gamification';
 import { awardSectionXP, updateStreak, checkBadges } from '@/services/gamificationService';
-import { completeSection as completeLessonSection, getLesson, getLearningProgress } from '@/services/lessonService';
-import { completeConceptLearning, getTopicMastery } from '@/services/masteryService';
+import { completeSection as completeLessonSection, getLesson } from '@/services/lessonService';
+import { completeConceptLearning } from '@/services/masteryService';
+import { getLessonSections, type LessonSectionData, type SectionType } from '@/services/lessonSectionService';
 import { getTopicStatusData, getTopicProgressInfo, getEffectiveMinQuestions } from '@/services/topicStatusService';
+import { LessonSection, SectionTabs } from '@/components/learn/LessonSection';
 
-interface LessonSection {
+interface LessonSectionLocal {
   id: string;
   title: string;
   content: string;
+  sectionType?: SectionType;
   example?: string;
   keyPoints?: string[];
   visualDescription?: string;
+  ncertRef?: string;
 }
 
 interface TopicData {
@@ -41,7 +45,7 @@ export default function TopicLearn() {
   const { badge, showBadges, hideBadge } = useBadgeNotification();
   
   const [topic, setTopic] = useState<TopicData | null>(null);
-  const [sections, setSections] = useState<LessonSection[]>([]);
+  const [sections, setSections] = useState<LessonSectionLocal[]>([]);
   const [currentSection, setCurrentSection] = useState(0);
   const [completedSections, setCompletedSections] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
@@ -143,19 +147,39 @@ export default function TopicLearn() {
     setGenerating(true);
     
     try {
-      // Use the lesson service to generate AI-powered content
+      // First, try to fetch pre-seeded lesson sections from database
+      const dbSections = await getLessonSections(topicId);
+      
+      if (dbSections.length > 0) {
+        // Use database content if available
+        const convertedSections: LessonSectionLocal[] = dbSections.map((section: LessonSectionData) => ({
+          id: section.id,
+          title: section.title,
+          content: section.content,
+          sectionType: section.sectionType,
+          ncertRef: section.ncertRef,
+          // Don't duplicate content as example - let the component handle section types
+          keyPoints: section.sectionType === 'remember' ? extractKeyPoints(section.content) : undefined,
+        }));
+        setSections(convertedSections);
+        setGenerating(false);
+        return;
+      }
+      
+      // Fallback: Use the lesson service to generate AI-powered content
       const lesson = await getLesson(topicId, {
-        gradeName: profile?.grade_id ? 'Class 10' : 'Student', // TODO: Get actual grade name
+        gradeName: profile?.grade_id ? 'Class 10' : 'Student',
         subjectName: subjectName || 'Subject',
         chapterName: chapterName,
         topicName: topicName,
       });
       
       // Convert service sections to component sections
-      const generatedSections: LessonSection[] = lesson.sections.map((section, index) => ({
+      const generatedSections: LessonSectionLocal[] = lesson.sections.map((section) => ({
         id: section.id,
         title: section.title,
         content: section.content,
+        sectionType: 'concept' as SectionType,
         example: section.example,
         visualDescription: section.visualDescription,
         keyPoints: extractKeyPoints(section.content),
@@ -165,10 +189,11 @@ export default function TopicLearn() {
     } catch (error) {
       console.error('Failed to generate lesson:', error);
       // Fallback to basic content if AI fails
-      const fallbackSections: LessonSection[] = [
+      const fallbackSections: LessonSectionLocal[] = [
         {
           id: '1',
           title: `Introduction to ${topicName}`,
+          sectionType: 'introduction' as SectionType,
           content: `Welcome to the lesson on ${topicName}. This is an important concept in ${chapterName} that you'll use throughout your studies. Let's explore the key ideas together.`,
           example: `Think of ${topicName} as a building block for more advanced concepts.`,
           keyPoints: [
@@ -180,6 +205,7 @@ export default function TopicLearn() {
         {
           id: '2', 
           title: 'Key Concepts',
+          sectionType: 'concept' as SectionType,
           content: `Now let's dive deeper into the main ideas behind ${topicName}. Pay attention to how each concept connects to what you already know from previous chapters.`,
           example: 'Real-world applications help us understand abstract concepts better.',
           keyPoints: [
@@ -191,6 +217,7 @@ export default function TopicLearn() {
         {
           id: '3',
           title: 'How to Apply It',
+          sectionType: 'example' as SectionType,
           content: `Great job learning the basics! Now let's see how to use ${topicName} to solve problems. Remember, practice makes perfect!`,
           example: 'Try solving problems step by step, writing down each step clearly.',
           keyPoints: [
@@ -203,6 +230,7 @@ export default function TopicLearn() {
         {
           id: '4',
           title: 'Summary & Next Steps',
+          sectionType: 'summary' as SectionType,
           content: `Excellent! You've learned the basics of ${topicName}. Now you're ready to practice what you've learned. Remember, making mistakes is part of learning!`,
           keyPoints: [
             `You now understand ${topicName}`,
@@ -456,62 +484,21 @@ export default function TopicLearn() {
           </CardContent>
         </Card>
       ) : currentSectionData ? (
-        <Card className="mt-6">
-          <CardContent className="pt-6">
-            <h2 className="text-xl font-bold text-foreground">{currentSectionData.title}</h2>
-            
-            <p className="mt-4 text-foreground leading-relaxed">
-              {currentSectionData.content}
-            </p>
-
-            {currentSectionData.example && (
-              <div className="mt-4 rounded-lg bg-accent p-4">
-                <div className="flex items-center gap-2 text-accent-foreground font-medium">
-                  <Lightbulb className="h-4 w-4" />
-                  <span>Example</span>
-                </div>
-                <p className="mt-2 text-accent-foreground/80">
-                  {currentSectionData.example}
-                </p>
-              </div>
-            )}
-
-            {currentSectionData.keyPoints && (
-              <div className="mt-4">
-                <h3 className="font-semibold text-foreground mb-2">Key Points:</h3>
-                <ul className="space-y-2">
-                  {currentSectionData.keyPoints.map((point, idx) => (
-                    <li key={idx} className="flex items-start gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-primary mt-0.5 flex-shrink-0" />
-                      <span className="text-muted-foreground">{point}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
-
-            {/* Checkpoint Button */}
-            <div className="mt-6 pt-4 border-t border-border">
-              {!completedSections.has(currentSection) ? (
-                <Button 
-                  onClick={handleSectionComplete}
-                  className="w-full"
-                >
-                  <CheckCircle2 className="mr-2 h-4 w-4" />
-                  {isTopicCompleted ? 'I Reviewed This!' : 'I Understand This! (+10 XP)'}
-                </Button>
-              ) : currentSection < sections.length - 1 ? (
-                <Button 
-                  onClick={() => setCurrentSection(prev => prev + 1)}
-                  className="w-full"
-                >
-                  Next Section
-                  <ChevronRight className="ml-2 h-4 w-4" />
-                </Button>
-              ) : null}
-            </div>
-          </CardContent>
-        </Card>
+        <div className="mt-6">
+          <LessonSection
+            title={currentSectionData.title}
+            content={currentSectionData.content}
+            sectionType={currentSectionData.sectionType}
+            example={currentSectionData.example}
+            keyPoints={currentSectionData.keyPoints}
+            ncertRef={currentSectionData.ncertRef}
+            isCompleted={completedSections.has(currentSection)}
+            isLast={currentSection === sections.length - 1}
+            onComplete={handleSectionComplete}
+            onNext={() => setCurrentSection(prev => prev + 1)}
+            xpReward={isTopicCompleted ? 0 : 10}
+          />
+        </div>
       ) : null}
 
       {/* Action Buttons - Updated with new status messages */}

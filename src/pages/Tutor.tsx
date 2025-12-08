@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { Send, WifiOff, RefreshCw, AlertCircle, Sparkles, MessageCircle, Lightbulb } from 'lucide-react';
+import { Send, WifiOff, RefreshCw, AlertCircle, Sparkles, Lightbulb } from 'lucide-react';
+import { ChatMessage } from '@/components/chat';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
@@ -160,21 +161,21 @@ export default function Tutor() {
                 )}
               >
                 {message.role === 'assistant' && (
-                  <div className="flex-shrink-0 mr-2">
-                    <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-sm">
+                  <div className="flex-shrink-0 mr-2 mt-1">
+                    <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-sm shadow-md">
                       🦉
                     </div>
                   </div>
                 )}
                 <div
                   className={cn(
-                    'max-w-[80%] rounded-2xl px-4 py-3',
+                    'max-w-[85%] rounded-2xl px-4 py-3',
                     message.role === 'user'
-                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-br-md'
+                      ? 'bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-br-md shadow-md'
                       : 'bg-card border border-border text-card-foreground rounded-bl-md shadow-sm'
                   )}
                 >
-                  <p className="text-sm whitespace-pre-wrap leading-relaxed">{message.content}</p>
+                  <ChatMessage content={message.content} role={message.role} />
                 </div>
               </div>
             ))}

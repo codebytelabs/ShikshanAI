@@ -224,3 +224,267 @@ describe('Practice Service Properties', () => {
     });
   });
 });
+
+
+// =============================================
+// COMPREHENSIVE CURRICULUM CONTENT PROPERTIES
+// =============================================
+
+import type { Question } from './practiceService';
+
+/**
+ * Validate that a question has a non-empty solution
+ * Property 5: Solution presence
+ */
+function validateSolutionPresence(question: Question): boolean {
+  return question.solution !== null && question.solution.trim().length > 0;
+}
+
+/**
+ * Validate that a question has a valid difficulty level
+ * Property 6: Difficulty level presence
+ */
+function validateDifficultyLevel(question: Question): boolean {
+  const validDifficulties = ['easy', 'medium', 'hard'];
+  return validDifficulties.includes(question.difficulty);
+}
+
+/**
+ * Validate question type diversity for a topic
+ * Property 4: Question type diversity
+ */
+function validateQuestionTypeDiversity(questions: Question[]): boolean {
+  if (questions.length === 0) return true;
+  const types = new Set(questions.map(q => q.questionType));
+  return types.size >= 2;
+}
+
+describe('Comprehensive Curriculum Content Properties', () => {
+  /**
+   * **Feature: comprehensive-curriculum-content, Property 5: Solution presence**
+   * *For any* practice question, the solution field should be non-empty
+   * and contain step-by-step explanation.
+   * **Validates: Requirements 3.2**
+   */
+  describe('Property 5: Solution presence', () => {
+    const questionWithSolutionArb = fc.record({
+      id: fc.uuid(),
+      topicId: fc.uuid(),
+      question: fc.string({ minLength: 10, maxLength: 200 }),
+      questionType: fc.constantFrom('mcq', 'numerical', 'short'),
+      options: fc.option(fc.array(fc.string({ minLength: 1, maxLength: 50 }), { minLength: 4, maxLength: 4 }), { nil: null }),
+      correctAnswer: fc.string({ minLength: 1, maxLength: 100 }),
+      hint: fc.option(fc.string({ minLength: 5, maxLength: 100 }), { nil: null }),
+      solution: fc.string({ minLength: 20, maxLength: 500 }), // Non-empty solution
+      curriculumRef: fc.option(fc.string({ minLength: 5, maxLength: 50 }), { nil: null }),
+      difficulty: fc.constantFrom('easy', 'medium', 'hard'),
+    });
+
+    it('should validate that questions with solutions pass validation', () => {
+      fc.assert(
+        fc.property(questionWithSolutionArb, (question) => {
+          expect(validateSolutionPresence(question)).toBe(true);
+        }),
+        { numRuns: 100 }
+      );
+    });
+
+    it('should reject questions with null solutions', () => {
+      const questionWithoutSolution: Question = {
+        id: 'test-id',
+        topicId: 'topic-id',
+        question: 'What is 2 + 2?',
+        questionType: 'mcq',
+        options: ['1', '2', '3', '4'],
+        correctAnswer: '4',
+        hint: null,
+        solution: null,
+        curriculumRef: null,
+        difficulty: 'easy',
+      };
+      expect(validateSolutionPresence(questionWithoutSolution)).toBe(false);
+    });
+
+    it('should reject questions with empty solutions', () => {
+      const questionWithEmptySolution: Question = {
+        id: 'test-id',
+        topicId: 'topic-id',
+        question: 'What is 2 + 2?',
+        questionType: 'mcq',
+        options: ['1', '2', '3', '4'],
+        correctAnswer: '4',
+        hint: null,
+        solution: '   ',
+        curriculumRef: null,
+        difficulty: 'easy',
+      };
+      expect(validateSolutionPresence(questionWithEmptySolution)).toBe(false);
+    });
+  });
+
+  /**
+   * **Feature: comprehensive-curriculum-content, Property 6: Difficulty level presence**
+   * *For any* practice question, the difficulty field should be set to one of:
+   * 'easy', 'medium', 'hard'.
+   * **Validates: Requirements 3.3**
+   */
+  describe('Property 6: Difficulty level presence', () => {
+    const questionArb = fc.record({
+      id: fc.uuid(),
+      topicId: fc.uuid(),
+      question: fc.string({ minLength: 10, maxLength: 200 }),
+      questionType: fc.constantFrom('mcq', 'numerical', 'short'),
+      options: fc.option(fc.array(fc.string({ minLength: 1, maxLength: 50 }), { minLength: 4, maxLength: 4 }), { nil: null }),
+      correctAnswer: fc.string({ minLength: 1, maxLength: 100 }),
+      hint: fc.option(fc.string({ minLength: 5, maxLength: 100 }), { nil: null }),
+      solution: fc.string({ minLength: 20, maxLength: 500 }),
+      curriculumRef: fc.option(fc.string({ minLength: 5, maxLength: 50 }), { nil: null }),
+      difficulty: fc.constantFrom('easy', 'medium', 'hard'),
+    });
+
+    it('should validate that questions have valid difficulty levels', () => {
+      fc.assert(
+        fc.property(questionArb, (question) => {
+          expect(validateDifficultyLevel(question)).toBe(true);
+        }),
+        { numRuns: 100 }
+      );
+    });
+
+    it('should accept easy difficulty', () => {
+      const question: Question = {
+        id: 'test-id',
+        topicId: 'topic-id',
+        question: 'What is 2 + 2?',
+        questionType: 'mcq',
+        options: ['1', '2', '3', '4'],
+        correctAnswer: '4',
+        hint: null,
+        solution: 'Step 1: Add 2 and 2. Result: 4',
+        curriculumRef: null,
+        difficulty: 'easy',
+      };
+      expect(validateDifficultyLevel(question)).toBe(true);
+    });
+
+    it('should accept medium difficulty', () => {
+      const question: Question = {
+        id: 'test-id',
+        topicId: 'topic-id',
+        question: 'Solve: x² - 5x + 6 = 0',
+        questionType: 'numerical',
+        options: null,
+        correctAnswer: '2, 3',
+        hint: null,
+        solution: 'Step 1: Factor. (x-2)(x-3) = 0. x = 2 or x = 3',
+        curriculumRef: null,
+        difficulty: 'medium',
+      };
+      expect(validateDifficultyLevel(question)).toBe(true);
+    });
+
+    it('should accept hard difficulty', () => {
+      const question: Question = {
+        id: 'test-id',
+        topicId: 'topic-id',
+        question: 'Prove that √2 is irrational',
+        questionType: 'short',
+        options: null,
+        correctAnswer: 'Proof by contradiction',
+        hint: null,
+        solution: 'Assume √2 = p/q where p,q are coprime...',
+        curriculumRef: null,
+        difficulty: 'hard',
+      };
+      expect(validateDifficultyLevel(question)).toBe(true);
+    });
+
+    it('should reject invalid difficulty levels', () => {
+      const question: Question = {
+        id: 'test-id',
+        topicId: 'topic-id',
+        question: 'What is 2 + 2?',
+        questionType: 'mcq',
+        options: ['1', '2', '3', '4'],
+        correctAnswer: '4',
+        hint: null,
+        solution: 'Step 1: Add 2 and 2. Result: 4',
+        curriculumRef: null,
+        difficulty: 'very_hard' as any, // Invalid
+      };
+      expect(validateDifficultyLevel(question)).toBe(false);
+    });
+  });
+
+  /**
+   * **Feature: comprehensive-curriculum-content, Property 4: Question type diversity**
+   * *For any* topic with practice questions, there should be questions of at least
+   * 2 different question types (mcq, numerical, short).
+   * **Validates: Requirements 3.1**
+   */
+  describe('Property 4: Question type diversity', () => {
+    it('should validate diverse question types', () => {
+      const questions: Question[] = [
+        {
+          id: '1',
+          topicId: 't1',
+          question: 'MCQ question',
+          questionType: 'mcq',
+          options: ['a', 'b', 'c', 'd'],
+          correctAnswer: 'a',
+          hint: null,
+          solution: 'Solution here',
+          curriculumRef: null,
+          difficulty: 'easy',
+        },
+        {
+          id: '2',
+          topicId: 't1',
+          question: 'Numerical question',
+          questionType: 'numerical',
+          options: null,
+          correctAnswer: '42',
+          hint: null,
+          solution: 'Solution here',
+          curriculumRef: null,
+          difficulty: 'medium',
+        },
+      ];
+      expect(validateQuestionTypeDiversity(questions)).toBe(true);
+    });
+
+    it('should reject single question type', () => {
+      const questions: Question[] = [
+        {
+          id: '1',
+          topicId: 't1',
+          question: 'MCQ question 1',
+          questionType: 'mcq',
+          options: ['a', 'b', 'c', 'd'],
+          correctAnswer: 'a',
+          hint: null,
+          solution: 'Solution here',
+          curriculumRef: null,
+          difficulty: 'easy',
+        },
+        {
+          id: '2',
+          topicId: 't1',
+          question: 'MCQ question 2',
+          questionType: 'mcq',
+          options: ['a', 'b', 'c', 'd'],
+          correctAnswer: 'b',
+          hint: null,
+          solution: 'Solution here',
+          curriculumRef: null,
+          difficulty: 'medium',
+        },
+      ];
+      expect(validateQuestionTypeDiversity(questions)).toBe(false);
+    });
+
+    it('should handle empty question array', () => {
+      expect(validateQuestionTypeDiversity([])).toBe(true);
+    });
+  });
+});

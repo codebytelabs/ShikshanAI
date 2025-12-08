@@ -254,6 +254,7 @@ export type Database = {
       }
       student_profiles: {
         Row: {
+          avatar: string | null
           created_at: string
           device_id: string
           grade_id: string | null
@@ -267,6 +268,7 @@ export type Database = {
           user_id: string | null
         }
         Insert: {
+          avatar?: string | null
           created_at?: string
           device_id: string
           grade_id?: string | null
@@ -280,6 +282,7 @@ export type Database = {
           user_id?: string | null
         }
         Update: {
+          avatar?: string | null
           created_at?: string
           device_id?: string
           grade_id?: string | null

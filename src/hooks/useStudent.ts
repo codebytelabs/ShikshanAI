@@ -12,6 +12,7 @@ interface StudentProfile {
   last_active_at: string | null;
   user_id: string | null;
   session_count: number;
+  avatar: string | null;
 }
 
 interface StudentSubject {

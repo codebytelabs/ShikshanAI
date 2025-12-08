@@ -5,9 +5,10 @@ import { useStudentContext } from '@/contexts/StudentContext';
 import { getSubjectProgress } from '@/services/progressService';
 import { getGamificationData, GamificationData } from '@/services/gamificationService';
 import { 
-  BookOpen, Loader2, Star, Target, Flame, Trophy, 
+  BookOpen, Star, Target, Flame, Trophy, 
   ChevronRight, Play, Sparkles, Clock, Zap
 } from 'lucide-react';
+import { getDisplayName } from '@/components/profile/StudentAvatar';
 import { Progress } from '@/components/ui/progress';
 import { cn } from '@/lib/utils';
 
@@ -67,6 +68,7 @@ export default function Home() {
   const [subjectsWithProgress, setSubjectsWithProgress] = useState<SubjectWithProgress[]>([]);
   const [loading, setLoading] = useState(true);
   const [gradeName, setGradeName] = useState('');
+  const [gradeNumber, setGradeNumber] = useState<number>(10);
   const [gamification, setGamification] = useState<GamificationData | null>(null);
   const [refreshKey, setRefreshKey] = useState(0);
 
@@ -88,12 +90,13 @@ export default function Home() {
 
       const { data: gradeData } = await supabase
         .from('grades')
-        .select('name')
+        .select('name, number')
         .eq('id', profile.grade_id)
         .single();
       
       if (gradeData) {
         setGradeName(gradeData.name);
+        setGradeNumber(gradeData.number || 10);
       }
 
       const subjectIds = studentSubjects.map(s => s.subject_id);
@@ -187,7 +190,10 @@ export default function Home() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-sm text-muted-foreground">Welcome back,</p>
-            <h1 className="text-2xl font-bold text-foreground font-display">{gradeName || 'Student'}</h1>
+            <h1 className="text-2xl font-bold text-foreground font-display">
+              {getDisplayName(profile?.name, profile?.device_id, gradeNumber)}
+            </h1>
+            {gradeName && <p className="text-xs text-muted-foreground">{gradeName} • CBSE</p>}
           </div>
           
           {/* Streak Badge */}

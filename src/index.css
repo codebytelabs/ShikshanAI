@@ -381,3 +381,44 @@ html {
     @apply bg-muted-foreground/30 rounded-full hover:bg-muted-foreground/50;
   }
 }
+
+
+/* Chat Message Styles */
+@layer components {
+  .chat-message-content {
+    @apply text-sm;
+  }
+
+  .chat-message-content h4 {
+    @apply font-semibold text-foreground mt-3 mb-1.5 first:mt-0;
+  }
+
+  .chat-message-content p {
+    @apply leading-relaxed mb-1.5 last:mb-0;
+  }
+
+  .chat-message-content ul {
+    @apply my-2 space-y-1.5;
+  }
+
+  .chat-message-content ol {
+    @apply my-2 space-y-2;
+  }
+
+  .chat-message-content pre {
+    @apply my-3 p-3 bg-slate-900 text-slate-100 rounded-lg overflow-x-auto text-xs;
+  }
+
+  .chat-message-content code {
+    @apply px-1.5 py-0.5 bg-slate-100 dark:bg-slate-800 rounded text-xs font-mono text-indigo-700 dark:text-indigo-300;
+  }
+
+  .chat-message-content strong {
+    @apply font-semibold text-foreground;
+  }
+
+  /* Math expressions styling */
+  .chat-message-content .math {
+    @apply font-mono text-indigo-700 dark:text-indigo-300 bg-indigo-50 dark:bg-indigo-900/30 px-1 rounded;
+  }
+}
