@@ -308,10 +308,10 @@ export default function Home() {
       <section className="px-4 mt-6">
         <div className="rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 p-5 text-white shadow-lg shadow-indigo-500/20">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-semibold text-lg">Today's 10 Minutes</h3>
+            <h3 className="font-semibold text-lg">Today's {gamification?.dailyGoalMinutes || 30} Minutes</h3>
             <div className="flex items-center gap-1 bg-white/20 rounded-full px-2.5 py-1">
               <Clock className="h-3.5 w-3.5" />
-              <span className="text-xs font-medium">10m</span>
+              <span className="text-xs font-medium">{gamification?.dailyGoalMinutes || 30}m</span>
             </div>
           </div>
           
