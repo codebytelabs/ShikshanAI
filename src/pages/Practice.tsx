@@ -2,9 +2,12 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
-import { CheckCircle2, XCircle, Lightbulb, BookOpen, ChevronRight, ChevronLeft, Loader2, RotateCcw, ArrowLeft } from 'lucide-react';
+import { 
+  CheckCircle2, XCircle, Lightbulb, BookOpen, ChevronRight, 
+  ChevronLeft, Loader2, RotateCcw, ArrowLeft, Flame, Zap,
+  Trophy, Star, Sparkles
+} from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { useNetworkStatus } from '@/hooks/useNetworkStatus';
 import { useStudentContext } from '@/contexts/StudentContext';
@@ -33,19 +36,22 @@ interface Question {
   difficulty: string;
 }
 
-// Component for numerical/short answer questions
+// Difficulty colors
+const difficultyStyles = {
+  easy: { bg: 'bg-emerald-100', text: 'text-emerald-700', label: 'Easy' },
+  medium: { bg: 'bg-amber-100', text: 'text-amber-700', label: 'Medium' },
+  hard: { bg: 'bg-red-100', text: 'text-red-700', label: 'Hard' },
+};
+
+// Numerical Answer Component
 function NumericalAnswer({
   question,
-  isAnswered,
   showSolution,
   onAnswer,
-  onShowSolution,
 }: {
   question: Question;
-  isAnswered: boolean;
   showSolution: boolean;
   onAnswer: (answer: string, isCorrect: boolean) => void;
-  onShowSolution: () => void;
 }) {
   const [userAnswer, setUserAnswer] = useState('');
   const [submitted, setSubmitted] = useState(false);
@@ -54,11 +60,9 @@ function NumericalAnswer({
   const handleSubmit = () => {
     if (!userAnswer.trim()) return;
     
-    // Normalize answers for comparison (trim, lowercase, remove extra spaces)
     const normalizedUser = userAnswer.trim().toLowerCase().replace(/\s+/g, ' ');
     const normalizedCorrect = (question.correct_answer || '').trim().toLowerCase().replace(/\s+/g, ' ');
     
-    // Check if correct (exact match or numeric equivalence)
     const correct = normalizedUser === normalizedCorrect || 
       (parseFloat(normalizedUser) === parseFloat(normalizedCorrect));
     
@@ -68,12 +72,9 @@ function NumericalAnswer({
   };
 
   if (showSolution && !submitted) {
-    // User skipped to solution without answering
     return (
-      <div className="rounded-lg border border-dashed border-border bg-muted/30 p-4 text-center">
-        <p className="text-sm text-muted-foreground">
-          Solution shown - no answer submitted
-        </p>
+      <div className="rounded-xl border-2 border-dashed border-muted bg-muted/30 p-4 text-center">
+        <p className="text-sm text-muted-foreground">Solution shown - no answer submitted</p>
       </div>
     );
   }
@@ -81,25 +82,34 @@ function NumericalAnswer({
   if (submitted) {
     return (
       <div className={cn(
-        "rounded-lg border p-4",
-        isCorrect ? "border-primary bg-primary/10" : "border-destructive bg-destructive/10"
+        "rounded-xl border-2 p-4",
+        isCorrect 
+          ? "border-emerald-300 bg-emerald-50" 
+          : "border-red-300 bg-red-50"
       )}>
         <div className="flex items-center gap-2">
           {isCorrect ? (
-            <CheckCircle2 className="h-5 w-5 text-primary" />
+            <>
+              <div className="h-8 w-8 rounded-full bg-emerald-500 flex items-center justify-center">
+                <CheckCircle2 className="h-5 w-5 text-white" />
+              </div>
+              <span className="font-semibold text-emerald-700">Correct! 🎉</span>
+            </>
           ) : (
-            <XCircle className="h-5 w-5 text-destructive" />
+            <>
+              <div className="h-8 w-8 rounded-full bg-red-500 flex items-center justify-center">
+                <XCircle className="h-5 w-5 text-white" />
+              </div>
+              <span className="font-semibold text-red-700">Not quite right</span>
+            </>
           )}
-          <span className={cn("font-medium", isCorrect ? "text-primary" : "text-destructive")}>
-            {isCorrect ? "Correct!" : "Incorrect"}
-          </span>
         </div>
-        <p className="mt-2 text-sm">
+        <p className="mt-3 text-sm">
           Your answer: <span className="font-medium">{userAnswer}</span>
         </p>
         {!isCorrect && question.correct_answer && (
           <p className="mt-1 text-sm">
-            Correct answer: <span className="font-medium text-primary">{question.correct_answer}</span>
+            Correct answer: <span className="font-semibold text-emerald-600">{question.correct_answer}</span>
           </p>
         )}
       </div>
@@ -114,10 +124,14 @@ function NumericalAnswer({
           value={userAnswer}
           onChange={(e) => setUserAnswer(e.target.value)}
           placeholder="Enter your answer..."
-          className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
+          className="flex-1 rounded-xl border-2 border-border bg-background px-4 py-3 text-base focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 transition-all"
           onKeyDown={(e) => e.key === 'Enter' && handleSubmit()}
         />
-        <Button onClick={handleSubmit} disabled={!userAnswer.trim()}>
+        <Button 
+          onClick={handleSubmit} 
+          disabled={!userAnswer.trim()}
+          className="rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 px-6 hover:from-indigo-700 hover:to-purple-700"
+        >
           Submit
         </Button>
       </div>
@@ -149,10 +163,10 @@ export default function Practice() {
   const [stats, setStats] = useState<PracticeStats | null>(null);
   const [allQuestionsExhausted, setAllQuestionsExhausted] = useState(false);
   const [sessionXP, setSessionXP] = useState(0);
+  const [consecutiveCorrect, setConsecutiveCorrect] = useState(0);
   const [consecutiveWrong, setConsecutiveWrong] = useState(0);
   const [attemptCounts, setAttemptCounts] = useState<Record<string, number>>({});
 
-  // Convert PracticeQuestion to local Question format
   const convertQuestion = (q: PracticeQuestion): Question => ({
     id: q.id,
     question: q.question,
@@ -167,46 +181,30 @@ export default function Practice() {
 
   useEffect(() => {
     async function fetchQuestions() {
-      // If offline, try to load from IndexedDB
       if (!navigator.onLine && chapterId) {
         const downloaded = await isChapterDownloaded(chapterId);
         if (downloaded) {
-          let offlineQuestions;
+          let offlineQuestions: Question[];
           if (topicId) {
-            offlineQuestions = await getOfflineQuestionsByTopic(chapterId, topicId);
+            offlineQuestions = (await getOfflineQuestionsByTopic(chapterId, topicId)).map((q: PracticeQuestion) => convertQuestion(q));
           } else {
-            offlineQuestions = await getOfflineQuestions(chapterId);
+            offlineQuestions = (await getOfflineQuestions(chapterId)).map((q: PracticeQuestion) => convertQuestion(q));
           }
-          
-          const parsed = offlineQuestions.map(q => ({
-            id: q.id,
-            question: q.question,
-            question_type: q.questionType,
-            options: q.options,
-            correct_answer: q.correctAnswer,
-            hint: q.hint,
-            solution: q.solution,
-            curriculum_ref: q.curriculumRef,
-            difficulty: q.difficulty,
-          }));
-          setQuestions(parsed);
+          setQuestions(offlineQuestions);
           setLoading(false);
           return;
         }
       }
 
-      // Online: Use practiceService for smart question ordering
       if (topicId && profile) {
         try {
           const prioritizedQuestions = await getQuestionsForTopic(topicId, profile.id);
           const converted = prioritizedQuestions.map(convertQuestion);
           setQuestions(converted);
           
-          // Get stats
           const topicStats = await getStats(topicId, profile.id);
           setStats(topicStats);
           
-          // Check if all questions have been correctly answered
           if (topicStats.unattempted === 0 && topicStats.incorrect === 0) {
             setAllQuestionsExhausted(true);
           }
@@ -217,7 +215,6 @@ export default function Practice() {
         return;
       }
 
-      // Fallback: fetch from Supabase directly
       let query = supabase.from('practice_questions').select('*');
       
       if (topicId) {
@@ -250,59 +247,31 @@ export default function Practice() {
     fetchQuestions();
   }, [topicId, chapterId, isOnline, profile]);
 
-  if (loading) {
-    return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
-      </div>
-    );
-  }
-
-  if (questions.length === 0) {
-    return (
-      <main className="flex min-h-screen flex-col items-center justify-center px-4">
-        <BookOpen className="h-12 w-12 text-muted-foreground" />
-        <h2 className="mt-4 text-lg font-semibold text-foreground">No Questions Yet</h2>
-        <p className="mt-2 text-center text-muted-foreground">
-          Practice questions for this topic will be added soon.
-        </p>
-      </main>
-    );
-  }
-
-  const question = questions[currentIndex];
-  const progress = ((currentIndex + 1) / questions.length) * 100;
-  const isAnswered = selectedAnswer !== null || showSolution;
-  const correctCount = Object.values(answers).filter(Boolean).length;
-
-  // Handler for numerical/short answer questions
-  const handleNumericalAnswer = async (answer: string, isCorrect: boolean) => {
+  const handleAnswer = async (answer: string, isCorrect: boolean) => {
     setSelectedAnswer(answer);
-    setAnswers(prev => ({ ...prev, [question.id]: isCorrect }));
+    setAnswers(prev => ({ ...prev, [questions[currentIndex].id]: isCorrect }));
     
-    // Track attempts for first-try bonus
-    const currentAttempts = attemptCounts[question.id] || 0;
-    setAttemptCounts(prev => ({ ...prev, [question.id]: currentAttempts + 1 }));
+    const currentAttempts = attemptCounts[questions[currentIndex].id] || 0;
+    setAttemptCounts(prev => ({ ...prev, [questions[currentIndex].id]: currentAttempts + 1 }));
     const isFirstTry = currentAttempts === 0;
 
-    // Track consecutive wrong answers
     if (isCorrect) {
+      setConsecutiveCorrect(prev => prev + 1);
       setConsecutiveWrong(0);
     } else {
       setConsecutiveWrong(prev => prev + 1);
+      setConsecutiveCorrect(0);
     }
 
-    // Record attempt using practiceService
     if (profile) {
       try {
         await recordAttempt({
           studentId: profile.id,
-          questionId: question.id,
+          questionId: questions[currentIndex].id,
           selectedAnswer: answer,
           isCorrect,
         });
 
-        // Award XP for correct answers
         if (isCorrect) {
           const xpAmount = isFirstTry ? 10 : 5;
           const xpResult = await awardQuestionXP(profile.id, isFirstTry);
@@ -310,23 +279,19 @@ export default function Practice() {
           setSessionXP(prev => prev + xpAmount);
           showXP(xpAmount, isFirstTry ? 'First try!' : 'Correct!');
           
-          // Show level-up celebration if leveled up
           if (xpResult.leveledUp) {
             setTimeout(() => showLevelUp(xpResult.newLevel), 500);
           }
           
-          // Show badge notifications if any new badges earned
           if (xpResult.newBadges && xpResult.newBadges.length > 0) {
             const badgeDelay = xpResult.leveledUp ? 1500 : 500;
             setTimeout(() => showBadges(xpResult.newBadges), badgeDelay);
           }
 
-          // Update mastery
           if (topicId) {
             await updateMasteryFromPractice(profile.id, topicId, true);
           }
         } else {
-          // Update mastery for wrong answer
           if (topicId) {
             await updateMasteryFromPractice(profile.id, topicId, false);
           }
@@ -336,79 +301,15 @@ export default function Practice() {
       }
     }
 
-    // Queue response for sync if offline
     if (!navigator.onLine) {
-      await queueResponse(question.id, answer, isCorrect);
+      await queueResponse(questions[currentIndex].id, answer, isCorrect);
     }
   };
 
   const handleAnswerSelect = async (answer: string) => {
-    if (isAnswered) return;
-    setSelectedAnswer(answer);
-    
-    const isCorrect = answer === question.correct_answer;
-    setAnswers(prev => ({ ...prev, [question.id]: isCorrect }));
-
-    // Track attempts for first-try bonus
-    const currentAttempts = attemptCounts[question.id] || 0;
-    setAttemptCounts(prev => ({ ...prev, [question.id]: currentAttempts + 1 }));
-    const isFirstTry = currentAttempts === 0;
-
-    // Track consecutive wrong answers
-    if (isCorrect) {
-      setConsecutiveWrong(0);
-    } else {
-      setConsecutiveWrong(prev => prev + 1);
-    }
-
-    // Record attempt using practiceService
-    if (profile) {
-      try {
-        await recordAttempt({
-          studentId: profile.id,
-          questionId: question.id,
-          selectedAnswer: answer,
-          isCorrect,
-        });
-
-        // Award XP for correct answers (Requirement 3.2, 3.3)
-        if (isCorrect) {
-          const xpAmount = isFirstTry ? 10 : 5;
-          const xpResult = await awardQuestionXP(profile.id, isFirstTry);
-          await updateStreak(profile.id);
-          setSessionXP(prev => prev + xpAmount);
-          showXP(xpAmount, isFirstTry ? 'First try!' : 'Correct!');
-          
-          // Show level-up celebration if leveled up
-          if (xpResult.leveledUp) {
-            setTimeout(() => showLevelUp(xpResult.newLevel), 500);
-          }
-          
-          // Show badge notifications if any new badges earned
-          if (xpResult.newBadges && xpResult.newBadges.length > 0) {
-            const badgeDelay = xpResult.leveledUp ? 1500 : 500;
-            setTimeout(() => showBadges(xpResult.newBadges), badgeDelay);
-          }
-
-          // Update mastery (Requirement 6.2)
-          if (topicId) {
-            await updateMasteryFromPractice(profile.id, topicId, true);
-          }
-        } else {
-          // Update mastery for wrong answer
-          if (topicId) {
-            await updateMasteryFromPractice(profile.id, topicId, false);
-          }
-        }
-      } catch (error) {
-        console.error('Failed to record attempt:', error);
-      }
-    }
-
-    // Queue response for sync if offline
-    if (!navigator.onLine) {
-      await queueResponse(question.id, answer, isCorrect);
-    }
+    if (selectedAnswer !== null || showSolution) return;
+    const isCorrect = answer === questions[currentIndex].correct_answer;
+    await handleAnswer(answer, isCorrect);
   };
 
   const handleNext = () => {
@@ -427,137 +328,135 @@ export default function Practice() {
     setShowSolution(false);
     setAnswers({});
     setAllQuestionsExhausted(false);
+    setConsecutiveCorrect(0);
+    setConsecutiveWrong(0);
   };
 
-  return (
-    <main className="px-4 pt-6 pb-4">
-      {/* XP Notification */}
-      {notification && (
-        <XPNotification
-          amount={notification.amount}
-          reason={notification.reason}
-          onDismiss={hideXP}
-        />
-      )}
-      
-      {/* Level Up Celebration */}
-      {levelUp && (
-        <LevelUpNotification
-          newLevel={levelUp}
-          onDismiss={hideLevelUp}
-        />
-      )}
-      
-      {/* Badge Earned Celebration */}
-      {badge && (
-        <BadgeNotification
-          badge={badge}
-          onDismiss={hideBadge}
-        />
-      )}
+  if (loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-12 w-12 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin" />
+          <p className="text-sm text-muted-foreground animate-pulse">Loading questions...</p>
+        </div>
+      </div>
+    );
+  }
 
-      {/* Review Concept Suggestion (Requirement 7.4) */}
+  if (questions.length === 0) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center px-6 bg-background">
+        <div className="bg-muted/50 p-6 rounded-3xl">
+          <BookOpen className="h-16 w-16 text-muted-foreground" />
+        </div>
+        <h2 className="mt-6 text-xl font-bold text-foreground font-display">No Questions Yet</h2>
+        <p className="mt-2 text-center text-muted-foreground">
+          Practice questions for this topic will be added soon.
+        </p>
+        <Button onClick={() => navigate(-1)} className="mt-6">
+          Go Back
+        </Button>
+      </main>
+    );
+  }
+
+  const question = questions[currentIndex];
+  const progress = ((currentIndex + 1) / questions.length) * 100;
+  const isAnswered = selectedAnswer !== null || showSolution;
+  const correctCount = Object.values(answers).filter(Boolean).length;
+  const diffStyle = difficultyStyles[question.difficulty as keyof typeof difficultyStyles] || difficultyStyles.medium;
+
+  return (
+    <main className="min-h-screen bg-background pb-24">
+      {/* Notifications */}
+      {notification && <XPNotification amount={notification.amount} reason={notification.reason} onDismiss={hideXP} />}
+      {levelUp && <LevelUpNotification newLevel={levelUp} onDismiss={hideLevelUp} />}
+      {badge && <BadgeNotification badge={badge} onDismiss={hideBadge} />}
+
+      {/* Review Suggestion */}
       {consecutiveWrong >= 3 && topicId && (
-        <div className="fixed top-4 left-4 right-4 z-50 bg-yellow-50 border border-yellow-200 rounded-lg p-4 shadow-lg">
-          <p className="text-sm text-yellow-800 font-medium">
-            💡 Having trouble? Maybe review the concept first.
+        <div className="fixed top-4 left-4 right-4 z-50 bg-amber-50 border border-amber-200 rounded-xl p-4 shadow-lg animate-slide-up">
+          <p className="text-sm text-amber-800 font-medium flex items-center gap-2">
+            <Lightbulb className="h-4 w-4" /> Having trouble? Maybe review the concept first.
           </p>
-          <Button
-            size="sm"
-            variant="outline"
-            className="mt-2"
-            onClick={() => navigate(`/topic/${topicId}`)}
-          >
-            <BookOpen className="h-4 w-4 mr-1" />
-            Review Concept
+          <Button size="sm" variant="outline" className="mt-2" onClick={() => navigate(`/topic/${topicId}`)}>
+            <BookOpen className="h-4 w-4 mr-1" /> Review Concept
           </Button>
         </div>
       )}
 
       {/* Header */}
-      <header>
+      <header className="px-4 pt-6 pb-4">
         <div className="flex items-center gap-3">
           <button 
             onClick={() => navigate(-1)}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-card border border-border"
+            className="flex h-10 w-10 items-center justify-center rounded-xl bg-card border border-border hover:bg-muted transition-colors"
           >
-            <ArrowLeft className="h-5 w-5 text-card-foreground" />
+            <ArrowLeft className="h-5 w-5 text-foreground" />
           </button>
           <div className="flex-1">
             <div className="flex items-center justify-between">
-              <h1 className="text-xl font-bold text-foreground">Practice</h1>
-              <span className="text-sm font-medium text-primary">
+              <h1 className="text-xl font-bold text-foreground font-display">Practice</h1>
+              <span className="text-sm font-semibold text-indigo-600">
                 {currentIndex + 1}/{questions.length}
               </span>
             </div>
-            <Progress value={progress} className="mt-2 h-2" />
           </div>
+        </div>
+        
+        {/* Progress Bar */}
+        <div className="mt-4 h-2.5 bg-muted rounded-full overflow-hidden">
+          <div 
+            className="h-full bg-gradient-to-r from-indigo-500 to-purple-600 rounded-full transition-all duration-500"
+            style={{ width: `${progress}%` }}
+          />
         </div>
       </header>
 
-      {/* Stats */}
-      <div className="mt-4 flex items-center gap-4 flex-wrap">
-        <div className="flex items-center gap-2 rounded-full bg-primary/10 px-3 py-1">
-          <CheckCircle2 className="h-4 w-4 text-primary" />
-          <span className="text-sm font-medium text-primary">{correctCount} correct</span>
+      {/* Stats Bar */}
+      <div className="px-4 flex items-center gap-3 flex-wrap">
+        <div className="flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1.5">
+          <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+          <span className="text-sm font-semibold text-emerald-700">{correctCount} correct</span>
         </div>
+        
         {sessionXP > 0 && (
-          <div className="flex items-center gap-1 rounded-full bg-yellow-100 px-3 py-1">
-            <span className="text-sm font-medium text-yellow-700">+{sessionXP} XP</span>
+          <div className="flex items-center gap-1.5 rounded-full bg-amber-100 px-3 py-1.5">
+            <Star className="h-4 w-4 text-amber-600 fill-amber-600" />
+            <span className="text-sm font-semibold text-amber-700">+{sessionXP} XP</span>
           </div>
         )}
-        {stats && (
-          <div className="text-xs text-muted-foreground">
-            {stats.attempted}/{stats.totalQuestions} attempted
+        
+        {consecutiveCorrect >= 3 && (
+          <div className="flex items-center gap-1.5 rounded-full bg-orange-100 px-3 py-1.5 animate-pulse">
+            <Flame className="h-4 w-4 text-orange-600" />
+            <span className="text-sm font-semibold text-orange-700">{consecutiveCorrect} streak!</span>
           </div>
         )}
       </div>
 
-      {/* All Questions Exhausted Notice */}
-      {allQuestionsExhausted && currentIndex === 0 && (
-        <Card className="mt-4 border-primary/30 bg-primary/5">
-          <CardContent className="py-4">
-            <div className="flex items-center gap-3">
-              <CheckCircle2 className="h-8 w-8 text-primary" />
-              <div>
-                <p className="font-medium text-foreground">Great job!</p>
-                <p className="text-sm text-muted-foreground">
-                  You've completed all questions. Practice again to reinforce your learning.
-                </p>
-              </div>
-            </div>
-            <Button onClick={handleRestart} variant="outline" className="mt-3 w-full">
-              <RotateCcw className="mr-2 h-4 w-4" />
-              Practice Again
-            </Button>
-          </CardContent>
-        </Card>
-      )}
-
       {/* Question Card */}
-      {(!allQuestionsExhausted || currentIndex > 0 || Object.keys(answers).length > 0) && (
-        <Card className="mt-4">
-          <CardHeader className="pb-3">
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              <span className={cn(
-                "rounded-full px-2 py-0.5",
-                question.difficulty === 'easy' ? 'bg-chart-2/20 text-chart-2' :
-                question.difficulty === 'medium' ? 'bg-chart-4/20 text-chart-4' :
-                'bg-destructive/20 text-destructive'
-              )}>
-                {question.difficulty}
+      <section className="px-4 mt-4">
+        <div className="rounded-2xl border border-border bg-card shadow-sm overflow-hidden">
+          {/* Question Header */}
+          <div className="px-5 py-4 border-b border-border bg-muted/30">
+            <div className="flex items-center gap-2">
+              <span className={cn("rounded-full px-2.5 py-1 text-xs font-medium", diffStyle.bg, diffStyle.text)}>
+                {diffStyle.label}
               </span>
-              <span>• {question.question_type.toUpperCase()}</span>
+              <span className="text-xs text-muted-foreground">• {question.question_type.toUpperCase()}</span>
             </div>
-            <CardTitle className="text-base font-medium leading-relaxed">
-              {question.question}
-            </CardTitle>
-          </CardHeader>
+          </div>
           
-          <CardContent className="space-y-4">
+          {/* Question Content */}
+          <div className="p-5">
+            <p className="text-lg font-medium text-foreground leading-relaxed">
+              {question.question}
+            </p>
+            
             {/* MCQ Options */}
             {question.question_type === 'mcq' && question.options && (
-              <div className="space-y-2">
+              <div className="mt-5 space-y-2.5">
                 {question.options.map((option, index) => {
                   const isSelected = selectedAnswer === option;
                   const isCorrect = option === question.correct_answer;
@@ -569,23 +468,24 @@ export default function Practice() {
                       onClick={() => handleAnswerSelect(option)}
                       disabled={isAnswered}
                       className={cn(
-                        "w-full rounded-lg border p-3 text-left transition-all",
-                        isSelected && !showResult && "border-primary bg-primary/5",
-                        showResult && isCorrect && "border-primary bg-primary/10",
-                        showResult && !isCorrect && "border-destructive bg-destructive/10",
-                        isAnswered && isCorrect && !isSelected && "border-primary/50 bg-primary/5",
-                        !isSelected && !isAnswered && "border-border hover:border-primary/50"
+                        "w-full rounded-xl border-2 p-4 text-left transition-all",
+                        !isAnswered && "hover:border-indigo-300 hover:bg-indigo-50/50",
+                        isSelected && !showResult && "border-indigo-500 bg-indigo-50",
+                        showResult && isCorrect && "border-emerald-500 bg-emerald-50",
+                        showResult && !isCorrect && "border-red-500 bg-red-50",
+                        isAnswered && isCorrect && !isSelected && "border-emerald-300 bg-emerald-50/50",
+                        !isSelected && !isAnswered && "border-border"
                       )}
                     >
                       <div className="flex items-center justify-between">
                         <span className="font-medium">{option}</span>
                         {showResult && (
                           isCorrect 
-                            ? <CheckCircle2 className="h-5 w-5 text-primary" />
-                            : <XCircle className="h-5 w-5 text-destructive" />
+                            ? <CheckCircle2 className="h-5 w-5 text-emerald-600" />
+                            : <XCircle className="h-5 w-5 text-red-600" />
                         )}
                         {isAnswered && isCorrect && !isSelected && (
-                          <CheckCircle2 className="h-5 w-5 text-primary" />
+                          <CheckCircle2 className="h-5 w-5 text-emerald-600" />
                         )}
                       </div>
                     </button>
@@ -594,148 +494,115 @@ export default function Practice() {
               </div>
             )}
 
-            {/* Numerical/Short Answer - with input field */}
+            {/* Numerical Answer */}
             {question.question_type !== 'mcq' && (
-              <NumericalAnswer
-                question={question}
-                isAnswered={isAnswered}
-                showSolution={showSolution}
-                onAnswer={handleNumericalAnswer}
-                onShowSolution={() => setShowSolution(true)}
-              />
+              <div className="mt-5">
+                <NumericalAnswer
+                  question={question}
+                  showSolution={showSolution}
+                  onAnswer={handleAnswer}
+                />
+              </div>
             )}
 
             {/* Hint */}
             {showHint && question.hint && (
-              <div className="rounded-lg bg-accent p-3">
-                <div className="flex items-center gap-2 text-accent-foreground">
+              <div className="mt-4 rounded-xl bg-amber-50 border border-amber-200 p-4">
+                <div className="flex items-center gap-2 text-amber-700">
                   <Lightbulb className="h-4 w-4" />
-                  <span className="text-sm font-medium">Hint</span>
+                  <span className="text-sm font-semibold">Hint</span>
                 </div>
-                <p className="mt-2 text-sm text-accent-foreground/80">
-                  {question.hint}
-                </p>
+                <p className="mt-2 text-sm text-amber-800">{question.hint}</p>
               </div>
             )}
 
             {/* Solution */}
             {showSolution && question.solution && (
-              <div className="rounded-lg border border-primary/30 bg-primary/5 p-4">
-                <div className="flex items-center gap-2 text-primary">
+              <div className="mt-4 rounded-xl bg-indigo-50 border border-indigo-200 p-4">
+                <div className="flex items-center gap-2 text-indigo-700">
                   <BookOpen className="h-4 w-4" />
-                  <span className="text-sm font-medium">Solution</span>
+                  <span className="text-sm font-semibold">Solution</span>
                 </div>
-                <p className="mt-2 text-sm whitespace-pre-wrap">{question.solution}</p>
+                <p className="mt-2 text-sm text-indigo-900 whitespace-pre-wrap">{question.solution}</p>
                 {question.curriculum_ref && (
-                  <p className="mt-3 text-xs text-muted-foreground">
-                    📖 {question.curriculum_ref}
-                  </p>
+                  <p className="mt-3 text-xs text-indigo-600">📖 {question.curriculum_ref}</p>
                 )}
               </div>
             )}
-
-            {/* Action Buttons */}
-            <div className="flex flex-col gap-2 pt-2">
-              {/* Hint and Solution buttons */}
-              <div className="flex gap-2">
-                {!showHint && !showSolution && question.hint && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowHint(true)}
-                    className="flex-1"
-                  >
-                    <Lightbulb className="mr-2 h-4 w-4" />
-                    Show Hint
-                  </Button>
-                )}
-                
-                {!showSolution && question.solution && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setShowSolution(true)}
-                    className="flex-1"
-                  >
-                    <BookOpen className="mr-2 h-4 w-4" />
-                    Show Solution
-                  </Button>
-                )}
-              </div>
-              
-              {/* Navigation buttons - always visible */}
-              <div className="flex gap-2 mt-2">
-                {currentIndex > 0 && (
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setCurrentIndex(prev => prev - 1);
-                      setSelectedAnswer(null);
-                      setShowHint(false);
-                      setShowSolution(false);
-                    }}
-                    className="flex-1"
-                  >
-                    <ChevronLeft className="mr-2 h-4 w-4" />
-                    Previous
-                  </Button>
-                )}
-                
-                {currentIndex < questions.length - 1 && (
-                  <Button
-                    onClick={handleNext}
-                    className="flex-1"
-                    variant={isAnswered || showSolution ? "default" : "outline"}
-                  >
-                    Next Question
-                    <ChevronRight className="ml-2 h-4 w-4" />
-                  </Button>
-                )}
-              </div>
+          </div>
+          
+          {/* Action Buttons */}
+          <div className="px-5 pb-5 space-y-3">
+            <div className="flex gap-2">
+              {!showHint && !showSolution && question.hint && (
+                <Button variant="outline" size="sm" onClick={() => setShowHint(true)} className="flex-1 rounded-xl">
+                  <Lightbulb className="mr-2 h-4 w-4" /> Show Hint
+                </Button>
+              )}
+              {!showSolution && question.solution && (
+                <Button variant="outline" size="sm" onClick={() => setShowSolution(true)} className="flex-1 rounded-xl">
+                  <BookOpen className="mr-2 h-4 w-4" /> Show Solution
+                </Button>
+              )}
             </div>
-          </CardContent>
-        </Card>
-      )}
+            
+            <div className="flex gap-2">
+              {currentIndex > 0 && (
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setCurrentIndex(prev => prev - 1);
+                    setSelectedAnswer(null);
+                    setShowHint(false);
+                    setShowSolution(false);
+                  }}
+                  className="flex-1 rounded-xl"
+                >
+                  <ChevronLeft className="mr-2 h-4 w-4" /> Previous
+                </Button>
+              )}
+              
+              {currentIndex < questions.length - 1 && (
+                <Button
+                  onClick={handleNext}
+                  className={cn(
+                    "flex-1 rounded-xl",
+                    isAnswered 
+                      ? "bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700" 
+                      : ""
+                  )}
+                  variant={isAnswered ? "default" : "outline"}
+                >
+                  Next Question <ChevronRight className="ml-2 h-4 w-4" />
+                </Button>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
 
-      {/* Session Complete / Back to Learning */}
-      {currentIndex === questions.length - 1 && (isAnswered || showSolution) && (
-        <div className="mt-6 space-y-3">
-          <div className="rounded-lg bg-primary/10 p-4 text-center">
-            <CheckCircle2 className="h-8 w-8 text-primary mx-auto" />
-            <h3 className="mt-2 font-semibold text-foreground">Practice Complete! 🎉</h3>
-            <p className="text-sm text-muted-foreground">
+      {/* Session Complete */}
+      {currentIndex === questions.length - 1 && isAnswered && (
+        <section className="px-4 mt-6 space-y-3">
+          <div className="rounded-2xl bg-gradient-to-br from-indigo-500 to-purple-600 p-6 text-white text-center">
+            <div className="h-16 w-16 rounded-full bg-white/20 flex items-center justify-center mx-auto">
+              <Trophy className="h-8 w-8" />
+            </div>
+            <h3 className="mt-4 text-xl font-bold font-display">Practice Complete! 🎉</h3>
+            <p className="mt-2 text-white/80">
               You got {correctCount} out of {questions.length} correct
               {sessionXP > 0 && ` and earned ${sessionXP} XP`}
             </p>
           </div>
           
-          <Button 
-            onClick={handleRestart}
-            variant="outline"
-            className="w-full"
-          >
-            <RotateCcw className="mr-2 h-4 w-4" />
-            Practice Again
+          <Button onClick={handleRestart} variant="outline" className="w-full rounded-xl">
+            <RotateCcw className="mr-2 h-4 w-4" /> Practice Again
           </Button>
           
-          {topicId && (
-            <Button 
-              onClick={() => navigate(`/learn/topic/${topicId}`)}
-              variant="outline"
-              className="w-full"
-            >
-              <BookOpen className="mr-2 h-4 w-4" />
-              Back to Learning
-            </Button>
-          )}
-          
-          <Button 
-            onClick={() => navigate(-1)}
-            className="w-full"
-          >
+          <Button onClick={() => navigate(-1)} className="w-full rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600">
             Done
           </Button>
-        </div>
+        </section>
       )}
     </main>
   );

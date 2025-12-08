@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useStudentContext } from '@/contexts/StudentContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { StorageManager } from '@/components/pwa/StorageManager';
@@ -13,19 +12,10 @@ import { useAuth, useSyncPrompt } from '@/hooks/useAuth';
 import { AuthModal } from '@/components/auth/AuthModal';
 import { SyncPrompt } from '@/components/auth/SyncPrompt';
 import type { Badge } from '@/services/gamification/types';
+import { cn } from '@/lib/utils';
 import { 
-  User, 
-  Flame, 
-  Clock, 
-  BookOpen, 
-  Settings, 
-  Bell,
-  RefreshCw,
-  Loader2,
-  LogOut,
-  Cloud,
-  CloudOff,
-  Star
+  User, Flame, BookOpen, Settings, Bell, RefreshCw, Loader2, 
+  LogOut, Cloud, CloudOff, Star, Trophy, ChevronRight, Sparkles
 } from 'lucide-react';
 
 interface SubjectProgress {
@@ -34,6 +24,17 @@ interface SubjectProgress {
   icon: string | null;
   progress: number;
 }
+
+const subjectStyles: Record<string, { bg: string; gradient: string; icon: string }> = {
+  'Mathematics': { bg: 'bg-violet-100', gradient: 'from-violet-500 to-purple-600', icon: '📐' },
+  'Science': { bg: 'bg-cyan-100', gradient: 'from-cyan-500 to-teal-600', icon: '🔬' },
+  'English': { bg: 'bg-pink-100', gradient: 'from-pink-500 to-rose-600', icon: '📚' },
+  'Social Science': { bg: 'bg-orange-100', gradient: 'from-orange-500 to-amber-600', icon: '🌍' },
+};
+
+const getSubjectStyle = (name: string) => {
+  return subjectStyles[name] || { bg: 'bg-indigo-100', gradient: 'from-indigo-500 to-purple-600', icon: '📖' };
+};
 
 export default function Profile() {
   const navigate = useNavigate();
@@ -47,10 +48,7 @@ export default function Profile() {
   const [gamification, setGamification] = useState<GamificationData | null>(null);
   const [allBadges, setAllBadges] = useState<Badge[]>([]);
 
-  const shouldShowSyncPrompt = useSyncPrompt(
-    profile?.session_count ?? 0,
-    profile?.user_id
-  );
+  const shouldShowSyncPrompt = useSyncPrompt(profile?.session_count ?? 0, profile?.user_id);
 
   useEffect(() => {
     async function fetchData() {
@@ -59,18 +57,14 @@ export default function Profile() {
         return;
       }
 
-      // Get grade name
       const { data: gradeData } = await supabase
         .from('grades')
         .select('name')
         .eq('id', profile.grade_id)
         .single();
       
-      if (gradeData) {
-        setGradeName(gradeData.name);
-      }
+      if (gradeData) setGradeName(gradeData.name);
 
-      // Get subjects
       const subjectIds = studentSubjects.map(s => s.subject_id);
       const { data: subjectsData } = await supabase
         .from('subjects')
@@ -78,25 +72,17 @@ export default function Profile() {
         .in('id', subjectIds);
 
       if (subjectsData && profile) {
-        // Fetch real progress for each subject
         const progressPromises = subjectsData.map(async (s) => {
           const progress = await getSubjectProgress(profile.id, s.id);
-          return {
-            ...s,
-            progress: progress.percentage,
-          };
+          return { ...s, progress: progress.percentage };
         });
-        
         const progressData = await Promise.all(progressPromises);
         setSubjectsProgress(progressData);
       }
 
-      // Fetch gamification data
       if (profile) {
         try {
-          // Recalculate streak from actual activity history to fix any incorrect values
           await recalculateStreakFromHistory(profile.id);
-          
           const [gamificationData, badges] = await Promise.all([
             getGamificationData(profile.id),
             getAllBadges(),
@@ -111,15 +97,16 @@ export default function Profile() {
       setLoading(false);
     }
 
-    if (!profileLoading) {
-      fetchData();
-    }
+    if (!profileLoading) fetchData();
   }, [profile, studentSubjects, profileLoading]);
 
   if (profileLoading || loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+      <div className="flex min-h-screen items-center justify-center bg-background">
+        <div className="flex flex-col items-center gap-3">
+          <div className="h-12 w-12 rounded-full border-4 border-indigo-200 border-t-indigo-600 animate-spin" />
+          <p className="text-sm text-muted-foreground animate-pulse">Loading profile...</p>
+        </div>
       </div>
     );
   }
@@ -129,212 +116,214 @@ export default function Profile() {
     : 0;
 
   const isAuthenticated = Boolean(user || profile?.user_id);
+  const earnedBadgesCount = gamification?.badges?.length || 0;
 
   return (
-    <main className="px-4 pt-6 pb-4">
+    <main className="min-h-screen bg-background pb-24">
       {/* Profile Header */}
-      <div className="flex items-center gap-4">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary text-primary-foreground">
-          <User className="h-8 w-8" />
-        </div>
-        <div className="flex-1">
-          <h1 className="text-xl font-bold text-foreground">{profile?.name || 'Student'}</h1>
-          <p className="text-sm text-muted-foreground">
-            {gradeName} • CBSE
-          </p>
-          {/* Sync Status Indicator */}
-          <div className="flex items-center gap-1 mt-1">
-            {isAuthenticated ? (
-              <>
-                <Cloud className="h-3 w-3 text-primary" />
-                <span className="text-xs text-primary">Synced</span>
-              </>
-            ) : (
-              <>
-                <CloudOff className="h-3 w-3 text-muted-foreground" />
-                <span className="text-xs text-muted-foreground">Local only</span>
-              </>
-            )}
+      <div className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-800 px-4 pt-8 pb-16 text-white">
+        <div className="flex items-center gap-4">
+          <div className="relative">
+            <div className="flex h-20 w-20 items-center justify-center rounded-2xl bg-white/20 backdrop-blur-sm border-2 border-white/30">
+              <User className="h-10 w-10 text-white" />
+            </div>
+            {/* Level Badge */}
+            <div className="absolute -bottom-2 -right-2 h-8 w-8 rounded-full bg-gradient-to-r from-amber-400 to-orange-500 flex items-center justify-center text-xs font-bold text-white border-2 border-white shadow-lg">
+              {gamification?.level || 1}
+            </div>
+          </div>
+          <div className="flex-1">
+            <h1 className="text-2xl font-bold font-display">{profile?.name || 'Student'}</h1>
+            <p className="text-white/80 text-sm">{gradeName} • CBSE</p>
+            <div className="flex items-center gap-1 mt-1">
+              {isAuthenticated ? (
+                <>
+                  <Cloud className="h-3.5 w-3.5 text-emerald-300" />
+                  <span className="text-xs text-emerald-300">Synced to cloud</span>
+                </>
+              ) : (
+                <>
+                  <CloudOff className="h-3.5 w-3.5 text-white/60" />
+                  <span className="text-xs text-white/60">Local only</span>
+                </>
+              )}
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Sync Prompt for Anonymous Users */}
+      {/* Stats Cards - Overlapping */}
+      <div className="px-4 -mt-10">
+        <div className="grid grid-cols-4 gap-2">
+          {[
+            { icon: Star, value: gamification?.xp || 0, label: 'XP', color: 'text-amber-500', fill: 'fill-amber-500' },
+            { icon: Trophy, value: `Lv.${gamification?.level || 1}`, label: 'Level', color: 'text-purple-500' },
+            { icon: Flame, value: gamification?.streak || 0, label: 'Streak', color: 'text-orange-500', fill: 'fill-orange-500' },
+            { icon: BookOpen, value: `${totalProgress}%`, label: 'Progress', color: 'text-indigo-500' },
+          ].map((stat, idx) => (
+            <div key={idx} className="rounded-xl bg-card border border-border p-3 text-center shadow-sm">
+              <stat.icon className={cn("mx-auto h-5 w-5", stat.color, stat.fill)} />
+              <p className="mt-1 text-lg font-bold text-foreground">{stat.value}</p>
+              <p className="text-xs text-muted-foreground">{stat.label}</p>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Sync Prompt */}
       {shouldShowSyncPrompt && !syncPromptDismissed && !isAuthenticated && (
-        <div className="mt-4">
+        <div className="px-4 mt-4">
           <SyncPrompt onDismiss={() => setSyncPromptDismissed(true)} />
         </div>
       )}
 
-      {/* Auth Section */}
-      {!isAuthenticated && (
-        <Card className="mt-4">
-          <CardContent className="py-4">
+      {/* Auth Card */}
+      {!isAuthenticated ? (
+        <div className="px-4 mt-4">
+          <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
             <div className="flex items-center gap-3">
-              <Cloud className="h-8 w-8 text-muted-foreground" />
-              <div className="flex-1">
-                <p className="font-medium text-card-foreground">Sign in to sync</p>
-                <p className="text-xs text-muted-foreground">
-                  Access your progress from any device
-                </p>
+              <div className="h-12 w-12 rounded-xl bg-indigo-100 flex items-center justify-center">
+                <Cloud className="h-6 w-6 text-indigo-600" />
               </div>
-              <Button size="sm" onClick={() => setShowAuthModal(true)}>
+              <div className="flex-1">
+                <p className="font-semibold text-foreground">Sign in to sync</p>
+                <p className="text-xs text-muted-foreground">Access progress from any device</p>
+              </div>
+              <Button 
+                onClick={() => setShowAuthModal(true)}
+                className="rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600"
+              >
                 Sign In
               </Button>
             </div>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Authenticated User Info */}
-      {isAuthenticated && user && (
-        <Card className="mt-4">
-          <CardContent className="py-4">
+          </div>
+        </div>
+      ) : user && (
+        <div className="px-4 mt-4">
+          <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-4">
             <div className="flex items-center gap-3">
-              <Cloud className="h-8 w-8 text-primary" />
+              <div className="h-10 w-10 rounded-xl bg-emerald-500 flex items-center justify-center">
+                <Cloud className="h-5 w-5 text-white" />
+              </div>
               <div className="flex-1">
-                <p className="font-medium text-card-foreground">Signed in</p>
-                <p className="text-xs text-muted-foreground">{user.email}</p>
+                <p className="font-semibold text-emerald-800">Signed in</p>
+                <p className="text-xs text-emerald-600">{user.email}</p>
               </div>
               <Button 
                 size="sm" 
                 variant="outline" 
                 onClick={signOut}
                 disabled={authLoading}
+                className="rounded-lg border-emerald-300 text-emerald-700 hover:bg-emerald-100"
               >
-                <LogOut className="h-4 w-4 mr-1" />
-                Sign Out
+                <LogOut className="h-4 w-4 mr-1" /> Sign Out
               </Button>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
-      {/* Stats */}
-      <div className="mt-6 grid grid-cols-4 gap-2">
-        <Card className="text-center">
-          <CardContent className="pt-3 pb-2">
-            <Star className="mx-auto h-5 w-5 text-yellow-500 fill-yellow-500" />
-            <p className="mt-1 text-xl font-bold text-card-foreground">{gamification?.xp || 0}</p>
-            <p className="text-xs text-muted-foreground">XP</p>
-          </CardContent>
-        </Card>
-
-        <Card className="text-center">
-          <CardContent className="pt-3 pb-2">
-            <div className="mx-auto h-5 w-5 rounded-full bg-primary text-primary-foreground text-xs font-bold flex items-center justify-center">
-              {gamification?.level || 1}
-            </div>
-            <p className="mt-1 text-xl font-bold text-card-foreground">Lv.{gamification?.level || 1}</p>
-            <p className="text-xs text-muted-foreground">Level</p>
-          </CardContent>
-        </Card>
-        
-        <Card className="text-center">
-          <CardContent className="pt-3 pb-2">
-            <Flame className="mx-auto h-5 w-5 text-orange-500 fill-orange-500" />
-            <p className="mt-1 text-xl font-bold text-card-foreground">{gamification?.streak || profile?.streak_days || 0}</p>
-            <p className="text-xs text-muted-foreground">Streak</p>
-          </CardContent>
-        </Card>
-        
-        <Card className="text-center">
-          <CardContent className="pt-3 pb-2">
-            <BookOpen className="mx-auto h-5 w-5 text-chart-4" />
-            <p className="mt-1 text-xl font-bold text-card-foreground">{totalProgress}%</p>
-            <p className="text-xs text-muted-foreground">Progress</p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Badges */}
+      {/* Badges Section */}
       {allBadges.length > 0 && (
-        <Card className="mt-6">
-          <CardHeader className="pb-2">
-            <CardTitle className="text-base">Badges</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <BadgeCollection
-              earnedBadges={gamification?.badges || []}
-              allBadges={allBadges}
-            />
-          </CardContent>
-        </Card>
+        <section className="px-4 mt-6">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-semibold text-foreground flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-amber-500" /> Achievements
+            </h2>
+            <span className="text-sm text-muted-foreground">{earnedBadgesCount}/{allBadges.length} earned</span>
+          </div>
+          <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
+            <BadgeCollection earnedBadges={gamification?.badges || []} allBadges={allBadges} />
+          </div>
+        </section>
       )}
 
       {/* Subject Progress */}
-      <Card className="mt-6">
-        <CardHeader className="pb-2">
-          <CardTitle className="text-base">Subject Progress</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {subjectsProgress.map((subject) => (
-            <div key={subject.id}>
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <span>{subject.icon || '📚'}</span>
-                  <span className="text-sm font-medium text-card-foreground">
-                    {subject.name}
-                  </span>
+      <section className="px-4 mt-6">
+        <h2 className="font-semibold text-foreground mb-3">Subject Progress</h2>
+        <div className="space-y-3">
+          {subjectsProgress.map((subject) => {
+            const style = getSubjectStyle(subject.name);
+            return (
+              <div key={subject.id} className="rounded-xl border border-border bg-card p-4 shadow-sm">
+                <div className="flex items-center gap-3">
+                  <div className={cn("h-10 w-10 rounded-xl flex items-center justify-center text-lg", style.bg)}>
+                    {style.icon}
+                  </div>
+                  <div className="flex-1">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium text-foreground">{subject.name}</span>
+                      <span className="text-sm font-bold text-indigo-600">{subject.progress}%</span>
+                    </div>
+                    <div className="mt-2 h-2 bg-muted rounded-full overflow-hidden">
+                      <div 
+                        className={cn("h-full rounded-full bg-gradient-to-r transition-all duration-500", style.gradient)}
+                        style={{ width: `${subject.progress}%` }}
+                      />
+                    </div>
+                  </div>
                 </div>
-                <span className="text-sm font-bold text-primary">{subject.progress}%</span>
               </div>
-              <Progress value={subject.progress} className="mt-2 h-2" />
-            </div>
-          ))}
-        </CardContent>
-      </Card>
+            );
+          })}
+        </div>
+      </section>
 
       {/* Offline Storage */}
-      <div className="mt-6">
+      <section className="px-4 mt-6">
         <StorageManager />
-      </div>
+      </section>
 
       {/* Settings */}
-      <Card className="mt-6">
-        <CardContent className="divide-y divide-border py-2">
-          <button className="flex w-full items-center gap-3 py-3 text-left">
-            <Bell className="h-5 w-5 text-muted-foreground" />
+      <section className="px-4 mt-6">
+        <h2 className="font-semibold text-foreground mb-3">Settings</h2>
+        <div className="rounded-xl border border-border bg-card overflow-hidden shadow-sm">
+          <button className="flex w-full items-center gap-3 p-4 text-left hover:bg-muted/50 transition-colors border-b border-border">
+            <div className="h-10 w-10 rounded-xl bg-amber-100 flex items-center justify-center">
+              <Bell className="h-5 w-5 text-amber-600" />
+            </div>
             <div className="flex-1">
-              <p className="font-medium text-card-foreground">Reminders</p>
+              <p className="font-medium text-foreground">Reminders</p>
               <p className="text-xs text-muted-foreground">Set daily study reminders</p>
             </div>
+            <ChevronRight className="h-5 w-5 text-muted-foreground" />
           </button>
           
           <button 
             onClick={() => navigate('/onboarding')}
-            className="flex w-full items-center gap-3 py-3 text-left"
+            className="flex w-full items-center gap-3 p-4 text-left hover:bg-muted/50 transition-colors"
           >
-            <Settings className="h-5 w-5 text-muted-foreground" />
+            <div className="h-10 w-10 rounded-xl bg-indigo-100 flex items-center justify-center">
+              <Settings className="h-5 w-5 text-indigo-600" />
+            </div>
             <div className="flex-1">
-              <p className="font-medium text-card-foreground">Change Class/Subjects</p>
+              <p className="font-medium text-foreground">Change Class/Subjects</p>
               <p className="text-xs text-muted-foreground">Update your preferences</p>
             </div>
+            <ChevronRight className="h-5 w-5 text-muted-foreground" />
           </button>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
-      {/* Reset */}
-      <Button 
-        variant="outline" 
-        className="mt-6 w-full" 
-        onClick={async () => {
-          if (profile) {
-            await resetProgress(profile.id);
-            setSubjectsProgress(prev => prev.map(s => ({ ...s, progress: 0 })));
-          }
-          navigate('/onboarding');
-        }}
-      >
-        <RefreshCw className="mr-2 h-4 w-4" />
-        Reset Profile
-      </Button>
+      {/* Reset Button */}
+      <div className="px-4 mt-6">
+        <Button 
+          variant="outline" 
+          className="w-full rounded-xl border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300" 
+          onClick={async () => {
+            if (profile) {
+              await resetProgress(profile.id);
+              setSubjectsProgress(prev => prev.map(s => ({ ...s, progress: 0 })));
+            }
+            navigate('/onboarding');
+          }}
+        >
+          <RefreshCw className="mr-2 h-4 w-4" /> Reset Profile
+        </Button>
+      </div>
 
       {/* Auth Modal */}
-      <AuthModal
-        open={showAuthModal}
-        onOpenChange={setShowAuthModal}
-      />
+      <AuthModal open={showAuthModal} onOpenChange={setShowAuthModal} />
     </main>
   );
 }
