@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <defs>
+    <linearGradient id="flameGradient" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#4F46E5"/>
+      <stop offset="50%" style="stop-color:#7C3AED"/>
+      <stop offset="100%" style="stop-color:#A855F7"/>
+    </linearGradient>
+    <linearGradient id="baseGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4F46E5"/>
+      <stop offset="100%" style="stop-color:#6366F1"/>
+    </linearGradient>
+  </defs>
+  
+  <!-- Diya Base -->
+  <ellipse cx="100" cy="145" rx="45" ry="12" fill="url(#baseGradient)"/>
+  <path d="M55 145 Q55 125 70 115 L130 115 Q145 125 145 145 Z" fill="url(#baseGradient)"/>
+  
+  <!-- Flame with S-curve (representing Shikshan) -->
+  <path d="M100 30 
+           Q120 50 115 70 
+           Q110 85 100 90 
+           Q90 85 85 70 
+           Q80 50 100 30" 
+        fill="url(#flameGradient)"/>
+  
+  <!-- Inner flame glow -->
+  <path d="M100 45 
+           Q110 55 108 68 
+           Q105 78 100 82 
+           Q95 78 92 68 
+           Q90 55 100 45" 
+        fill="#F59E0B" opacity="0.9"/>
+  
+  <!-- AI Circuit dots on flame -->
+  <circle cx="95" cy="60" r="2" fill="#ffffff" opacity="0.8"/>
+  <circle cx="105" cy="55" r="2" fill="#ffffff" opacity="0.8"/>
+  <circle cx="100" cy="70" r="2" fill="#ffffff" opacity="0.8"/>
+  <line x1="95" y1="60" x2="100" y2="70" stroke="#ffffff" stroke-width="0.5" opacity="0.6"/>
+  <line x1="105" y1="55" x2="100" y2="70" stroke="#ffffff" stroke-width="0.5" opacity="0.6"/>
+  
+  <!-- Wick -->
+  <rect x="98" y="105" width="4" height="10" fill="#1F2937" rx="1"/>
+</svg>
