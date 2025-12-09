@@ -1,11 +1,11 @@
 {
-  "name": "Vidya AI - NCERT Tutor for Class 9-10",
-  "short_name": "Vidya AI",
+  "name": "ShikshanAI - NCERT Tutor for Class 9-10",
+  "short_name": "ShikshanAI",
   "description": "AI-powered tutor for CBSE/NCERT Class 9-10 Math & Science. Get hints, solutions, and practice questions grounded in official textbooks.",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#059669",
+  "theme_color": "#4F46E5",
   "orientation": "portrait-primary",
   "scope": "/",
   "icons": [

@@ -24,7 +24,7 @@ export function UpdatePrompt() {
         <div className="flex-1">
           <p className="text-sm font-medium">Update available</p>
           <p className="text-xs text-muted-foreground">
-            A new version of Vidya AI is ready
+            A new version of ShikshanAI is ready
           </p>
         </div>
         <div className="flex items-center gap-2">

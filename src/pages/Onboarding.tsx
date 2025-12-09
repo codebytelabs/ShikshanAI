@@ -63,7 +63,7 @@ export default function Onboarding() {
         <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-primary">
           <GraduationCap className="h-8 w-8 text-primary-foreground" />
         </div>
-        <h1 className="mt-4 text-2xl font-bold text-foreground">Welcome to Vidya AI</h1>
+        <h1 className="mt-4 text-2xl font-bold text-foreground">Welcome to ShikshanAI</h1>
         <p className="mt-2 text-muted-foreground">
           Your CBSE tutor for Class 9-10
         </p>

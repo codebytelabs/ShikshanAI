@@ -24,7 +24,7 @@ export function InstallPrompt() {
           </div>
           <div className="flex-1">
             <h3 className="font-semibold text-card-foreground">
-              Install Vidya AI
+              Install ShikshanAI
             </h3>
             <p className="mt-1 text-sm text-muted-foreground">
               Add to your home screen for quick access and offline study
